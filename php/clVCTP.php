@@ -1,10 +1,12 @@
 <?php
 
+include_once('clError.php');
+
 class clVCTP {
   
   private $m_lv;
   private $m_objects;
-  private $error;
+  private $m_error; //- clError
   private $TypeNameTable;
   private $AttributNameTable;
   private $m_InterfaceCache;
@@ -114,28 +116,21 @@ class clVCTP {
 
 
 
-
-
   // -------------------------------------- //
-  public function getError() {
-    return $this->error;
+  public function getError()
+  {
+    return $this->m_error;
   }
 
-
-  // -------------------------------------- //
-  private function setError($errStr) {
-    $this->error[]='clVCTP:'. $errStr;
-
-    echo '<hr />clVCTP:'. $errStr .'<hr />';
-    return false;
-  }
 
   // -------------------------------------- //
   function __construct($lv)
   {
+    $this->m_lv = $lv;
+    $this->m_error = new clError('clVCTP');
+
     $this->initNameTabels(); //-- fill $this->TypeNameTable
 
-    $this->m_lv = $lv;
     $this->m_objects=array();
     $this->m_InterfaceCache=array();
 
@@ -157,7 +152,7 @@ class clVCTP {
         $reader->setOffset($pos);
         $len = $reader->readInt(2);
         
-	if ($len<4) $this->setError('internel Error: wrong block size!');
+	if ($len<4) $this->m_error->AddError('internel Error: wrong block size!');
 
         $item = array();
         $item ['atrib']=array();
@@ -269,7 +264,7 @@ class clVCTP {
 	break;
 
       default:  //- +MainTypeUnknown
-	//$this->setError('unknown object type: 0x'. dechex($ob['fileType']) .'  @ '.$ob['pos']);
+	//$this->m_error->AddError('unknown object type: 0x'. dechex($ob['fileType']) .'  @ '.$ob['pos']);
 	$propReadOK = false;
     }
 
@@ -291,7 +286,7 @@ class clVCTP {
 	}
 	else
 	{
-          $this->setError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['len'] .') Error @ '. $ob['pos']);
+          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['len'] .') Error @ '. $ob['pos']);
         }
         
       }
@@ -311,7 +306,7 @@ class clVCTP {
 
     if ($dimensions > 64)
     {
-      $this->setError('Array Dimension ('. $dimensions .') is > 64 @ '. $ob['pos']);
+      $this->m_error->AddError('Array Dimension ('. $dimensions .') is > 64 @ '. $ob['pos']);
       return false;
     }
 
@@ -325,7 +320,7 @@ class clVCTP {
       $tmp = $Reader->readInt(4);
       if ($tmp != -1)
       {
-        $this->setError('Array with property (index: '. i .' - flag: '. $tmp .' ? ) @ '. $ob['pos']);
+        $this->m_error->AddError('Array with property (index: '. i .' - flag: '. $tmp .' ? ) @ '. $ob['pos']);
         $ok=false;
       }
     }
@@ -337,7 +332,7 @@ class clVCTP {
         
       if ($tmp > $ObjectIndex)
       {
-	$this->setError('Wrong value for Array-Type-Index '. $tmp .' is > "This-Array-Object"-Index: '. $ObjectIndex .' @ '. $ob['pos']);
+	$this->m_error->AddError('Wrong value for Array-Type-Index '. $tmp .' is > "This-Array-Object"-Index: '. $ObjectIndex .' @ '. $ob['pos']);
 	$ok=false;   
       }
       else
@@ -363,7 +358,7 @@ class clVCTP {
   
     if ($tmp == 0) return true;
 
-    $this->setError('Number with prop (0x'. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
+    $this->m_error->AddError('Number with prop (0x'. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
     return false;
   }
 
@@ -394,7 +389,7 @@ class clVCTP {
           
 	If ($count > 124)
 	{
-          $this->setError('Cluster Item count ('. $count .') is > 124 @ '. $ob['pos']);
+          $this->m_error->AddError('Cluster Item count ('. $count .') is > 124 @ '. $ob['pos']);
           return false;
 	}
 	else
@@ -492,7 +487,7 @@ class clVCTP {
 
       default:
 	$refTypeName = '[unknown]';
-	$this->setError('Unknown refenence Type (0x'. dechex($refType) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
+	$this->m_error->AddError('Unknown refenence Type (0x'. dechex($refType) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
 	break;
     }
   
@@ -581,7 +576,7 @@ class clVCTP {
       
       If ($tmp != 0)
       {
-        $this->setError('Number+Uni - padding Error - unknown Data ['. decHex($tmp) .'] ? @ '. $ob['pos']);
+        $this->m_error->AddError('Number+Uni - padding Error - unknown Data ['. decHex($tmp) .'] ? @ '. $ob['pos']);
       }
     }
     
@@ -590,7 +585,7 @@ class clVCTP {
     $tmp = $Reader->readInt(1);
     If ($tmp != 0)
     {
-      $this->setError('Number+Uni - Unknown Data ['. decHex($tmp) .'] Property? @ '. $ob['pos']);
+      $this->m_error->AddError('Number+Uni - Unknown Data ['. decHex($tmp) .'] Property? @ '. $ob['pos']);
     }
 
 
@@ -613,7 +608,7 @@ class clVCTP {
     
     if ($count > 125)
     {
-      $this->setError('Terminal count > 124 @ '. $ob['pos']);
+      $this->m_error->AddError('Terminal count > 124 @ '. $ob['pos']);
       return false;
     }
 
@@ -658,7 +653,7 @@ class clVCTP {
   
     if ($tmp == -1) return true; //- same as 0xffffffff
 
-    $this->setError('Blob with prop ('. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
+    $this->m_error->AddError('Blob with prop ('. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
     return false;
   }
 

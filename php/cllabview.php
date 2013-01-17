@@ -246,6 +246,21 @@ class clLabView
   }
 
 
+  /** --------------------------------------
+   * @abstract returns the VI BDPW container Object that contains the password infromation
+
+   * @return clBDPW object Instanz of class clBDPW
+   */
+  public function getBDPW()
+  {
+    if (!isset($this->lvObj['BDPW'])) {
+      include_once('clBDPW.php');
+
+      $this->lvObj['BDPW'] = new clBDPW($this);
+    }
+
+    return $this->lvObj['BDPW'];
+  }
 
 
   // -------------------------------------- //

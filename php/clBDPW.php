@@ -1,16 +1,72 @@
 <?PHP
 
+include_once('clError.php');
+
+
 class clBDPW {
 	
+  private $m_lv;
+  private $m_FileHasPassword; //- Boolean
+  private $m_error; //- clError
+
+  private $m_VCTP;
+  private $m_VERS;
+
+  private $m_reader; //- clFileReader
+
+  private $m_set_md5_psw; //- String
 
   //- Information about the file password
-  private $m_password=array();
+  private $m_file_psw=array();
 
   //- Information about the new password
   private $m_password_set=array();
 
 
 
+  // -------------------------------------- //
+  function __construct($lv)
+  {
+    $this->m_lv = $lv;
+    $this->m_FileHasPassword = false;
+    $this->m_error = new clError('clBDPW');
+
+
+    If (!$lv->BlockNameExists('BDPW'))
+    {
+      $this->m_error->AddError('File has no password information!');
+      return;
+    }
+  
+    $this->m_FileHasPassword = True;
+    $reader = $lv->getBlockContent('BDPW', 0, False);
+    $this->m_reader = $reader;
+
+    //- requested for Hash-Salt
+    $this->m_VCTP = $lv->getVCTP();
+    $this->m_VCTP->getError()->CopyErrorsTo($this->m_error);
+
+    $this->m_VERS = $lv->getVERS();
+    $this->m_VERS->getError()->CopyErrorsTo($this->m_error);
+  
+
+    $filePSW = $reader->readStr(16);
+    $this->m_file_psw['password_md5'] = $filePSW;
+    $this->m_set_md5_psw = $filePSW;
+
+    $this->m_file_psw['hash_1'] = $reader->readStr(16);
+    $this->m_file_psw['hash_2'] = $reader->readStr(16);
+
+    //- calc current Salt (sometimes we are not able to read the salt from file: in this case the salt is "brute-force")
+    $this->m_file_psw['salt'] = $this->calcHash($filePSW, True)->salt;
+
+  }
+
+  // -------------------------------------- //
+  Public Function getError()
+  {
+    return $this->m_error;
+  }
 
 
   // -------------------------------------- //

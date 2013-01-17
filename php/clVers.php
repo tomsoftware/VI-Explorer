@@ -2,7 +2,7 @@
 
 class clVers {
   private $m_lv;
-  private $error;
+  private $m_error; //- clError
 
   private $m_version;
   private $m_vers_text;
@@ -10,17 +10,9 @@ class clVers {
 
 
   // -------------------------------------- //
-  public function getError() {
-    return $this->error;
-  }
-
-
-  // -------------------------------------- //
-  private function setError($errStr) {
-    $this->error='clVCTP:'. $errStr;
-
-    echo '<hr />clVCTP:'. $errStr .'<hr />';
-    return false;
+  public function getError()
+  {
+    return $this->m_error;
   }
 
 
@@ -29,6 +21,8 @@ class clVers {
   function __construct($lv)
   {
     $this->m_lv = $lv;
+    $this->m_error = new clError('clVers');
+
 
     if ($lv->BlockNameExists('vers'))
     {
@@ -42,7 +36,7 @@ class clVers {
   
       if ($v != 0)
       {
-        $this->setError('Verion - wrong data format (value: '. $v .' should be 0)!');
+        $this->m_error->AddError('Verion - wrong data format (value: '. $v .' should be 0)!');
 	return false;
       }
   
