@@ -24,14 +24,27 @@ $LV = new clLabView($FReader);
 
 if ($LV->readVI()) { //- read .VI File
 
+  $BDPW = $LV->getBDPW();
+
   $VCTP = $LV->getVCTP();
 
+  $VERS = $LV->getVERS();
 
+
+  echo '<pre>'. htmlentities($BDPW->getXML()) .'</pre>';
+
+  echo '<hr />';
 
   echo '<pre>'. htmlentities($VCTP->getXML()) .'</pre>';
 
+  echo '<hr />';
 
-  print_r($LV->getError());
+  echo '<pre>'. htmlentities($VERS->getXML()) .'</pre>';
+
+
+
+
+//  print_r($LV->getError());
 
 }
 
