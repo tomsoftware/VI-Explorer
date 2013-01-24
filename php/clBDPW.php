@@ -50,15 +50,14 @@ class clBDPW {
     $this->m_VERS->getError()->CopyErrorsTo($this->m_error);
   
 
-    $filePSW = $reader->readStr(16);
-    $this->m_file_psw['password_md5'] = $filePSW;
-    $this->m_set_md5_psw = $filePSW;
+    $this->m_file_psw = $this->readBDPW();
 
-    $this->m_file_psw['hash_1'] = $reader->readStr(16);
-    $this->m_file_psw['hash_2'] = $reader->readStr(16);
 
     //- calc current Salt (sometimes we are not able to read the salt from file: in this case the salt is "brute-force")
-    $this->m_file_psw['salt'] = $this->calcHash($filePSW, True)->salt;
+    $hash = $this->getHash($this->m_file_psw['password_md5'], True);
+    $this->m_file_psw['salt'] = $hash->salt;
+
+    if (!$hash->isOK) $this->m_error->AddError('Unable to detect the salt!');
 
   }
 
@@ -70,44 +69,172 @@ class clBDPW {
 
 
   // -------------------------------------- //
-  public function calcPassword($newPassword) {
+  Private Function getHash($md5password, $checkSalt = False)
+  {
+    $out = new stdClass();
+    $out->salt ='';
+    $out->hash1 ='';
+    $out->hash2 ='';
+    $out->isOK =false;
 
-    $out = array();
+    $data ='';
 
-    $LVSR_ID = $this->getBlockIdByName('LVSR');
-    $LIBN_ID = $this->getBlockIdByName('LIBN');
+    $lv = $this->m_lv;
 
-    $BDH__ID = $this->getBlockIdByName('BDHc');
-    if ($BDH__ID < 0) $BDH__ID = $this->getBlockIdByName('BDHb');
+    $BDH_name ='BDHc';
+    if ($this->m_lv->BlockNameExists('BDHb')) $BDH_name ='BDHb';
 
 
-    $LVSR_content = $this->getBlockContentById($LVSR_ID, 0, false);
-    $LIBN_content = $this->getBlockContentById($LIBN_ID, 0, false); 
-    $BDH__content = $this->getBlockContentById($BDH__ID);
-
-    $md5_password = md5($newPassword,true);
+    $LVSR_content = $lv->getBlockContent('LVSR', 0, false);
+    $LIBN_content = $lv->getBlockContent('LIBN', 0, false); 
+    $BDH__content = $lv->getBlockContent($BDH_name);
 
 
     $LIBN_count = $LIBN_content->readInt(4);
     $LIBN_len = $LIBN_content->readInt(1);
 
-    $new_content = str_repeat(chr(0),12);
 
-    //-- Hash1:  MD5_PSW + LIBN + LVSR + 
-    $md5_hash_1 = md5($md5_password . $LIBN_content->readStr($LIBN_len) . $LVSR_content->readStr() . $new_content ,true);
-  
+
+    If ($lv->BlockNameExists('LIBN'))
+    {
+      $LIBN_content = $lv->getBlockContent('LIBN', 0, False);
+    
+      $LIBN_count = $LIBN_content->readInt(4);
+      $LIBN_len = $LIBN_content->readInt(1);
+    
+      $data .= $LIBN_content->readStr($LIBN_len);
+    
+      For ($i = 1; $i<$LIBN_count; $i++)
+      {
+	$LIBN_len2 = $LIBN_content->readInt(1);
+	$data .= ':'. $LIBN_content->readStr($LIBN_len2);
+      }
+    }
+
+
+
+    $data .= $LVSR_content->readStr();
+
+    //- I'm not sure how to figure out if there are Terminals (=> generateSaltString) or not... so we have to test :-(
+    if ($checkSalt)
+    {
+      $salt = '';
+
+      If ($this->m_VERS->getMaior() >= 12)
+      {
+	$salt = $this->generateSaltString();
+
+	if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1'])
+	{
+	  $salt = $this->getSaltString(0, 0, 0);
+
+	  if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1']) return $out; //- Fail!
+	}
+      }
+      else
+      {
+	//- empty $salt
+        if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1']) return $out; //- Fail!
+      }
+
+      $out->salt = $salt;
+    }
+    else
+    {
+      $out->salt=$this->m_file_psw['salt'];
+    }
+
+
+
+    $out->hash1 = md5($md5password . $data . $out->salt, true);
+
+
 
     $BDH__len = $BDH__content->readInt(4);
     $BDH__hash = md5($BDH__content->readStr($BDH__len), true);
 
     //-- Hash2:  Hash1 + BDHc
-    $md5_hash_2 = md5($md5_hash_1 . $BDH__hash, true);
+    $out->hash2 = md5($out->hash1 . $BDH__hash, true);
 
+    $out->isOK = true;
+
+    return $out;
+  }
+
+
+
+  // -------------------------------------- //
+  private function countTerminals($ObjectIndex)
+  {
+
+    $VCTP = & $this->m_VCTP;
+
+    $out = new stdClass();
+
+    $out->numCount=0;
+    $out->strCount=0;
+    $out->pathCount=0;
+
+    for ($i=0; $i< $VCTP->getClientCount($ObjectIndex); $i++)
+    {
+      $cIndex = $VCTP->getClient($ObjectIndex, $i);
+
+      If ($VCTP->isNumber($cIndex)) $out->numCount++;
+      If ($VCTP->isPath($cIndex))   $out->pathCount++;
+      If ($VCTP->isString($cIndex)) $out->strCount++;
+      
+      If ($VCTP->getClientCount($cIndex) > 0)
+      {
+        $res = $this->countTerminals($cIndex);
+
+	$out->numCount+=$res->numCount;
+	$out->strCount+=$res->strCount;
+	$out->pathCount+=$res->pathCount;
+      }
+
+    }
+
+    return $out;
+
+  }
+
+
+
+
+  // -------------------------------------- //
+  private function generateSaltString()
+  {
+    $interface = $this->m_VCTP->getObjectIndexForInterface(0);  //- hopefully it is every time the first Terminal :-)
+
+    $count = $this->countTerminals($interface);
+
+    $salt = $this->getSaltString($count->numCount, $count->strCount, $count->pathCount);
+
+    return $salt;
+  }
+
+
+  // -------------------------------------- //
+  private function getSaltString($v1=0, $v2=0, $v3=0)
+  {
+    return pack('V', $v1) . pack('V', $v2) . pack('V', $v3);
+  }
+
+
+  // -------------------------------------- //
+  public function calcPassword($newPassword)
+  {
+    $md5_password = md5($newPassword);
+
+    $hash = $this->getHash($md5_password);
+
+    $out = array();
 
     $out['password']=$newPassword;
     $out['password_md5']=$md5_password;
-    $out['hash_1']=$md5_hash_1;
-    $out['hash_2']=$md5_hash_2;
+    $out['hash_1']=$hash->hash1;
+    $out['hash_2']=$hash->hash2;
+    $out['salt']=$hash->salt;
 
     $this->m_password_set = $out;
 
@@ -137,8 +264,8 @@ class clBDPW {
   // -------------------------------------- //
   private function readBDPW()
   {
-    $BDPW_ID = $this->getBlockIdByName('BDPW');
-    $block = $this->getBlockContentById($BDPW_ID, 0, false);
+    $block = $this->m_lv->getBlockContent('BDPW', 0, false);
+     
 
     $out = array();
 
@@ -146,16 +273,42 @@ class clBDPW {
     $out['hash_1'] = $block->readStr(16);
     $out['hash_2'] = $block->readStr(16);
 
-    $this->m_password = $out;
+    return $out;
 
   }
 
 
 
   // -------------------------------------- //
-  public function getPasswordHash($seperator='') {
+  public function getPasswordHash($seperator='')
+  {
     if (count($this->m_password)>0) return $this->toHex($this->m_password['password_md5'],$seperator);
     return '';
+  }
+
+
+  // -------------------------------------- //
+  public function getXML()
+  {
+    $out = "<?xml version='1.0'?>\n";
+    $out .=  "<!-- Filename='". htmlentities($this->m_lv->getFileName()) ."' -->\n\n";
+    $out .=  "<BDPW>\n";
+    
+    $out .=  "  <hash type='password' value='". bin2hex($this->m_file_psw['password_md5']) ."' /> \n";
+    $out .=  "  <hash type='hash1' value='".  bin2hex($this->m_file_psw['hash_1']) ."' /> \n";
+    $out .=  "  <hash type='hash2' value='".  bin2hex($this->m_file_psw['hash_2']) ."' /> \n";
+  
+    If ($this->m_file_psw['salt'] != '')
+    {
+      $out .=  "  <salt value='". bin2hex($this->m_file_psw['salt']) ."' /> \n";
+    }
+
+    $out .=  $this->m_error->getXML();
+
+
+    $out .=  "</BDPW>\n";
+
+    return $out;
   }
 }
 

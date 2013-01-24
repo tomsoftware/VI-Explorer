@@ -68,7 +68,7 @@ class clVers {
     $ret['minor'] =(($versonsCode >> 20) & 0x0F);
     $ret['bugfix']=(($versonsCode >> 16) & 0x0F);
     $ret['stage'] =(($versonsCode >> 13) & 0x07);
-    $ret['flags']= (($versonsCode >>  8) & 0x1F); //- 5 Bit - dont know
+    $ret['flags'] =(($versonsCode >>  8) & 0x1F); //- 5 Bit - dont know
     $ret['build'] =(($versonsCode >>  4) & 0x0F) * 10 + (($versonsCode >>  0) & 0x0F);
 
 
@@ -98,22 +98,23 @@ class clVers {
   public function getXML()
   {
     $out  = "<?xml version='1.0'?>\n";
-    $out .= "<!-- Filename='" . $this->lv->cleanHTML($this->lv->getFileName()) . "' -->\n\n";
-    $out .= "<VERS \n";
+    $out .= "<!-- Filename='" . htmlentities($this->m_lv->getFileName()) . "' -->\n\n";
+    $out .= "<VERS> \n";
     
     
-    $out .= "  version='" . $this->m_version['maior'] .".". $this->m_version['minor'] ."'\n";
-    $out .= "  bugfix='" . $this->m_version['bugfix'] ."'\n";
-    $out .= "  stage='" . $this->m_version['stage'] ."'\n";
-    $out .= "  stageText='" . $this->m_version['stage_text'] ."'\n";
-    $out .= "  build='" . $this->m_version['build'] ."'\n";
-    $out .= "  flags='" . $this->m_version['flags'] ."'\n";
+    $out .= "  <version value='" . $this->m_version['maior'] .".". $this->m_version['minor'] ."' />\n";
+    $out .= "  <bugfix value='" . $this->m_version['bugfix'] ."' />\n";
+    $out .= "  <stage value='" . $this->m_version['stage'] ."' />\n";
+    $out .= "  <stageText value='" . $this->m_version['stage_text'] ."' />\n";
+    $out .= "  <build value='" . $this->m_version['build'] ."' />\n";
+    $out .= "  <flags value='" . $this->m_version['flags'] ."' />\n";
   
-    $out .= "  VersionsText='" . $this->m_vers_text ."'\n";
-    $out .= "  VersionsInfo='" . $this->m_vers_info ."'\n";
+    $out .= "  <VersionsText value='" . $this->m_vers_text ."' />\n";
+    $out .= "  <VersionsInfo value='" . $this->m_vers_info ."' />\n";
   
+    $out .= $this->m_error->getXML();
 
-    $out .= "/>\n";
+    $out .= "</VERS>\n";
 
     return $out;
   }

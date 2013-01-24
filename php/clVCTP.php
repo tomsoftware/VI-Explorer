@@ -102,8 +102,10 @@ class clVCTP {
     const TypeRef = 0x70;
     const TypeTerminal = 0xF0;
     const TypeTypeDef = 0xF1;
+
     //- Not official
-    const typeValue = -2;
+    const TypeValue = -2;
+
   //- END [enumTerminalSubType] -//
 
 
@@ -264,7 +266,7 @@ class clVCTP {
 	break;
 
       default:  //- +MainTypeUnknown
-	//$this->m_error->AddError('unknown object type: 0x'. dechex($ob['fileType']) .'  @ '.$ob['pos']);
+	$this->m_error->AddError('unknown object type: 0x'. dechex($ob['fileType']) .'  @ '.$ob['pos'], true, '', false);
 	$propReadOK = false;
     }
 
@@ -286,7 +288,7 @@ class clVCTP {
 	}
 	else
 	{
-          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['len'] .') Error @ '. $ob['pos']);
+          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['size'] .') Error @ '. $ob['pos']);
         }
         
       }
@@ -311,7 +313,7 @@ class clVCTP {
     }
 
 
-    $this->AddPropertyLong($ObjectIndex, self::AttributTypeArrayDimensions, $dimensions, false);
+    $this->AddPropertyNum($ObjectIndex, self::AttributTypeArrayDimensions, $dimensions, false);
       
     $ok = true;
       
@@ -521,12 +523,13 @@ class clVCTP {
   private function readObjectPropertyUnit($Reader, $ObjectIndex)
   {
     $count = $Reader->readInt(2); //-unit/item count
-  
 
     $ob=& $this->m_objects[$ObjectIndex];
-    
 
+
+    $DataSize=0;
     $isTextEnum = False;
+
     if (($ob['type'] == self::TypeUnitU16) || ($ob['type'] == self::TypeUnitU8) || ($ob['type'] == self::TypeUnitU32)) $isTextEnum = True;
   
 
@@ -537,15 +540,15 @@ class clVCTP {
       $tmpClient['atrib']=array();
       $tmpClient['clients']=array();
       $tmpClient['mainType'] = self::MainTypeValue;
-      $tmpClient['type'] = $typeValue;
-      $tmpClient['fileType'] = $typeValue;
-      $tmpClient['len'] = $unitsize;
+      $tmpClient['type'] = self::TypeValue;
+      $tmpClient['fileType'] = self::TypeValue;
       $tmpClient['pos'] = $Reader->getOffset();
       $tmpClient['flags'] = 0;
       $tmpClient['name'] = 'UnitValue';
 
-
-      If ($isTextEnum)
+      $unitsize=0;
+ 
+      if ($isTextEnum)
       {
 	$unitsize = $Reader->readInt(1);
 
@@ -553,11 +556,14 @@ class clVCTP {
                              
         $DataSize += $unitsize;
       }
-      Else 
+      else 
       {
 	$tmpClient['label'] = '0x'. decHex($Reader->readInt(4));
       }        
       
+
+      $tmpClient['len'] = $unitsize;
+
 
       //- Add client
       $ob['client'][] = $tmpClient;
@@ -568,9 +574,9 @@ class clVCTP {
     
     If ($isTextEnum)
     {
-      //- pad size to mod 2
-      $tmp = $Reader->readInt($DataSize % 2);  //--- test with D:\Hacking\labview\connect\r\ref_queue_2.vi
-					      //----          D:\Hacking\labview\psw\lv2012\vis\2D Convolution (CDB).vi
+      //- pad size to mod 2 - not sure about this!
+      $tmp = $Reader->readInt($DataSize % 2);
+					      
       //$tmp = $Reader->readInt(($Reader->getOffset() + 1) % 2);
       
       
@@ -627,7 +633,7 @@ class clVCTP {
     {
       $Reader->readInt(2); //- don't know/padding
 
-      for($i=0; $i<count; $i++)
+      for($i=0; $i<$count; $i++)
       {
         $ob['clients'][$i]['flags'] = $Reader->readInt(4);
       }
@@ -659,6 +665,86 @@ class clVCTP {
 
 
 
+
+  // -------------------------------------- //
+  public function getClientCount($ObjectIndex)
+  {
+    if (($ObjectIndex >= 0) && ($ObjectIndex < count($this->m_objects)))
+    {
+      return count($this->m_objects[$ObjectIndex]['clients']);
+    }
+    
+    return 0;
+  }
+
+
+
+  // -------------------------------------- //
+  public function getClient($ObjectIndex, $ClientIndex)
+  {
+    if (($ObjectIndex >= 0) && ($ObjectIndex < count($this->m_objects) ))
+    {
+      if (($ClientIndex >= 0) && ($ClientIndex < count($this->m_objects[$ObjectIndex]['clients']) ))
+      {
+        return $this->m_objects[$ObjectIndex]['clients'][$ClientIndex]['index'];
+      }
+    }
+
+    return -1;  
+  }
+
+
+  // -------------------------------------- //
+  public function getObjectIndexForInterface($InterfaceIndex)
+  {
+    if (($InterfaceIndex >= 0) && ($InterfaceIndex < count($this->m_InterfaceCache)))
+    {
+      return $this->m_InterfaceCache[$InterfaceIndex];
+    }
+
+    return -1;
+  }
+
+
+
+  // -------------------------------------- //
+  public function isNumber($ObjectIndex)
+  {
+    if (($ObjectIndex >= 0) && ($ObjectIndex < count($this->m_objects)))
+    {
+      $mainType = $this->m_objects[$ObjectIndex]['mainType'];
+      return (($mainType == self::MainTypeNumber) | ($mainType == self::MainTypeUnit));
+    }
+
+    return false;
+  }
+
+
+  // -------------------------------------- //
+  public function isString($ObjectIndex)
+  {
+    if (($ObjectIndex >= 0) && ($ObjectIndex < count($this->m_objects)))
+    {
+      return ($this->m_objects[$ObjectIndex]['type'] == self::TypeString);
+    }
+
+    return false;
+  }
+
+
+  // -------------------------------------- //
+  public function isPath($ObjectIndex)
+  {
+    if (($ObjectIndex >= 0) && ($ObjectIndex < count($this->m_objects)))
+    {
+      return ($this->m_objects[$ObjectIndex]['type'] == self::TypePath);
+    }
+  
+    return false;
+  }
+
+
+
   // -------------------------------------- //
   public function getXML($index=-1, $deep= 0, $ClientFlags=0) {
 
@@ -676,7 +762,9 @@ class clVCTP {
       {
         $out .= $this->getXML($i, 1);
       } 
-    
+
+      $out .= $this->m_error->getXML();
+
       $out .= "</VCTP>\n";
         
       return $out;
@@ -794,7 +882,6 @@ class clVCTP {
       $out .= $SpPad ."</". $tagName .">\n";
     }
     
-
 
     return $out; // print_r($this->m_objects, true);
   }
