@@ -263,6 +263,24 @@ class clLabView
   }
 
 
+  /** --------------------------------------
+   * @abstract returns the VI Icon container Object that contains the Symbol
+   * @return clIcon object Instanz of class clIcon
+   */
+  public function getICON()
+  {
+    if (!isset($this->lvObj['ICON'])) {
+      include_once('clICON.php');
+
+      $this->lvObj['ICON'] = new clICON($this);
+    }
+
+    return $this->lvObj['ICON'];
+  }
+
+  
+
+
   // -------------------------------------- //
   /**
    * @abstract returns a FileReader-Object of the container of a given BlockID or BlockName 

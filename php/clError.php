@@ -94,11 +94,11 @@ class clError
     {
       if ($isWarning)
       {
-	echo 'Warning: '. htmlentities($this->formErrorString($ErrorInfo));
+	echo 'Warning: '. htmlentities($this->formErrorString($ErrorInfo)) .'<br />';
       }
       else
       {
-	echo  'Error: '. htmlentities($this->formErrorString($ErrorInfo));
+	echo  'Error: '. htmlentities($this->formErrorString($ErrorInfo)) .'<br />';
       }
     }
   }
