@@ -115,16 +115,35 @@ class clBDPW {
 
     $data .= $LVSR_content->readStr();
 
-    //- I'm not sure how to figure out if there are Terminals (=> generateSaltString) or not... so we have to test :-(
+    //- I'm not sure how to figure out if there are Terminals (=> generateSaltString) and waht is right... so we have to test :-(
     if ($checkSalt)
     {
       $salt = '';
 
-      If ($this->m_VERS->getMaior() >= 12)
+      if ($this->m_VERS->getMaior() >= 12)
       {
-	$salt = $this->generateSaltString();
+	$findOK = false;
+	$interfaceCount = $this->m_VCTP->getObjectIndexForInterfaceCount();
 
-	if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1'])
+	for($i=0; $i<$interfaceCount; $i++)
+	{
+	  //- generate Salt
+	  $interface = $this->m_VCTP->getObjectIndexForInterface($i);
+
+	  $count = $this->countTerminals($interface);
+
+	  $salt = $this->getSaltString($count->numCount, $count->strCount, $count->pathCount);
+
+	  //- test Salt
+	  if (md5($md5password . $data . $salt, true) == $this->m_file_psw['hash_1'])
+	  {
+	    $findOK=true;
+	    break;
+	  }
+	}
+
+	//- OK test if it is just {0 0 0}
+	if (!$findOK)
 	{
 	  $salt = $this->getSaltString(0, 0, 0);
 
@@ -201,18 +220,6 @@ class clBDPW {
 
 
 
-  // -------------------------------------- //
-  private function generateSaltString()
-  {
-    $interface = $this->m_VCTP->getObjectIndexForInterface(0);  //- hopefully it is every time the first Terminal :-)
-
-    $count = $this->countTerminals($interface);
-
-    $salt = $this->getSaltString($count->numCount, $count->strCount, $count->pathCount);
-
-    return $salt;
-  }
-
 
   // -------------------------------------- //
   private function getSaltString($v1=0, $v2=0, $v3=0)
@@ -224,19 +231,29 @@ class clBDPW {
   // -------------------------------------- //
   public function calcPassword($newPassword)
   {
-    $md5_password = md5($newPassword);
+    $md5_password = md5($newPassword, true);
 
     $hash = $this->getHash($md5_password);
 
-    $out = array();
+    if ($hash->isOK)
+    {
 
-    $out['password']=$newPassword;
-    $out['password_md5']=$md5_password;
-    $out['hash_1']=$hash->hash1;
-    $out['hash_2']=$hash->hash2;
-    $out['salt']=$hash->salt;
+      $out = array();
 
-    $this->m_password_set = $out;
+      $out['password']=$newPassword;
+      $out['password_md5']=$md5_password;
+      $out['hash_1']=$hash->hash1;
+      $out['hash_2']=$hash->hash2;
+      $out['salt']=$hash->salt;
+
+      $this->m_password_set = $out;
+
+      return true;
+    }
+
+    $this->m_error->AddError('Error crating new password hashs!');
+
+    return false;
 
   }
 
@@ -249,11 +266,9 @@ class clBDPW {
 
     if (count($set_psw)>0)
     {
-      $BDPW_ID = $this->getBlockIdByName('BDPW');
+      $BDPW_content = $this->m_lv->getBlockContent('BDPW', false);
 
-      $BDPW_content = $this->getBlockContentById($BDPW_ID, 0, false);
-
-      $BDPW_content->writeStr($set_psw['password_md5']);
+      $BDPW_content->writeStr($set_psw['password_md5'], 0);
       $BDPW_content->writeStr($set_psw['hash_1']);
       $BDPW_content->writeStr($set_psw['hash_2']);
     }

@@ -122,7 +122,7 @@ class clError
   // -------------------------------------- //
   Public Function reset()
   {
-    $thi->m_error = array();
+    $this->m_error = array();
   }
 
 

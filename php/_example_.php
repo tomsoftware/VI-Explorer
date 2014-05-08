@@ -43,6 +43,13 @@ if ($LV->readVI()) { //- read .VI File
 
 
 
+  $BDPW->calcPassword('hello');
+  $BDPW->writePassword();
+
+  $file->store('out.vi');
+
+
+
 
 //  print_r($LV->getError());
 

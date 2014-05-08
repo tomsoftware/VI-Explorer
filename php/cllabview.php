@@ -292,21 +292,21 @@ class clLabView
     $BlockID=-1;
 
     //- check if a ID or a Name is given
-	  if (is_numeric($BlockIdOrName))
+    if (is_numeric($BlockIdOrName))
     {
       $BlockID=($BlockIdOrName +0);
     }
     else
-	  {
-	    //- find ID for Name
+    {
+      //- find ID for Name
       foreach($this->BlockInfo as $i => $block)
-	    {
-	      if ($block['BlockName'] == $BlockIdOrName) 
-	      {
-	        $BlockID = $i;
-          break;
-        }
-	    }
+      {
+	if ($block['BlockName'] == $BlockIdOrName) 
+	{
+	  $BlockID = $i;
+	  break;
+	}
+      }
     }
 
     if ($BlockNr < 0) $BlockNr = 0;
@@ -387,7 +387,7 @@ class clLabView
 
     $usize=$data->readInt(4);
     
-    if (($usize < $size) || ($usize > ($size * 10))) {
+    if ((($usize+30) < $size) || ($usize > ($size * 10))) {
       $this->setError('unable to decompress section [#'. $info_blockID .']: uncompress-size-error - size: '. $size .' - uncompress-size:'. $usize);
       return $file->getFileReader(); //- empty File
     }

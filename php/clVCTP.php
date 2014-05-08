@@ -27,6 +27,7 @@ class clVCTP {
     const MainTypeArray = 0x4;    //- Array
     const MainTypeCluster = 0x5;  //- Struct (hard code [Timestamp] or flexibl)
     const MainTypeRef = 0x7;      //- Pointer
+    const MainTypeNumberPointer = 0x8;      //- INT+Format: Enum/Units Pointer
     const MainTypeTerminal = 0xF; //- like Cluser+Flags/Typdef
     //--- not official
     const MainTypeVoid = 0x100;   //- 0 is used for numbers
@@ -61,6 +62,7 @@ class clVCTP {
   //- BEGIN [enumTerminalSubType] -//
     const TypeUnknown = -1;
     const TypeVoid = 0;
+
     const TypeNumberI8 = 0x1;
     const TypeNumberI16 = 0x2;
     const TypeNumberI32 = 0x3;
@@ -75,6 +77,7 @@ class clVCTP {
     const TypeNumberCSG = 0xC;
     const TypeNumberCDB = 0xD;
     const TypeNumberCXT = 0xE;
+
     const TypeUnitI8 = 0x11;
     const TypeUnitI16 = 0x12;
     const TypeUnitI32 = 0x13;
@@ -89,17 +92,40 @@ class clVCTP {
     const TypeUnitCSG = 0x1C;
     const TypeUnitCDB = 0x1D;
     const TypeUnitCXT = 0x1E;
+
     const TypeBool = 0x21;
+
     const TypeString = 0x30;
     const TypePath = 0x32;
     const TypePicture = 0x33;
+    const TypeCString = 0x34;
+    const TypePascalString = 0x35;
     const TypeDAQChannel = 0x37;
+
     const TypeArray = 0x40;
+
     const TypeCluster = 0x50;
     const TypeClusterVariant = 0x53;
     const TypeClusterData = 0x54;
     const TypeClusterNumFixPoint = 0x5F;
+
     const TypeRef = 0x70;
+
+    const TypePointerNumberI8 = 0x81;
+    const TypePointerNumberI16 = 0x82;
+    const TypePointerNumberI32 = 0x83;
+    const TypePointerNumberI64 = 0x84;
+    const TypePointerNumberU8 = 0x85;
+    const TypePointerNumberU16 = 0x86;
+    const TypePointerNumberU32 = 0x87;
+    const TypePointerNumberU64 = 0x88;
+    const TypePointerNumberSGL = 0x89;
+    const TypePointerNumberDBL = 0x8A;
+    const TypePointerNumberXTP = 0x8B;
+    const TypePointerNumberCSG = 0x8C;
+    const TypePointerNumberCDB = 0x8D;
+    const TypePointerNumberCXT = 0x8E;
+
     const TypeTerminal = 0xF0;
     const TypeTypeDef = 0xF1;
 
@@ -137,7 +163,7 @@ class clVCTP {
     $this->m_InterfaceCache=array();
 
 
-    $this->m_VersionMaior =  $lv->getVERS()->getMaior();
+    $this->m_VersionMaior = $lv->getVERS()->getMaior();
 
 
     if ($lv->BlockNameExists('VCTP'))
@@ -148,43 +174,34 @@ class clVCTP {
       
       $pos = $reader->getOffset();
       
+
+      //- create Objects
+      for($i=0; $i<$count; $i++)
+      {
+	$this->getNewObject(0, 0);
+      }
+
+      //- fill objects
       for($i=0; $i<$count; $i++)
       {
         
+
         $reader->setOffset($pos);
         $len = $reader->readInt(2);
         
 	if ($len<4) $this->m_error->AddError('internel Error: wrong block size!');
 
-        $item = array();
-        $item ['atrib']=array();
-        $item ['clients']=array();
-        $item ['pos']=$pos;
-        $item ['size']=$len;
-        $item ['flags']=$reader->readInt(1);
-        $item ['label']='';
+
+	$ob=& $this->m_objects[$i];
+
+	$ob['pos'] = $pos;
+	$ob['size'] = $len;
+        $ob['flags']=$reader->readInt(1);
+
 
 	//-- basic type validation
-	$type = $reader->readInt(1);
+	$this->setNewObjectType($ob, $reader->readInt(1));
 
-	$item ['fileType']=$type;
-
-	if (isset($this->TypeNameTable[$type]))
-	{
-	  $item ['type']=$type;
-	  $item ['mainType']=($type >> 4);
-	  if ($type==0) $item['mainType'] = self::MainTypeVoid;
-	  $item ['name']=$this->TypeNameTable[$type];
-	}
-	else
-	{
-	  $item ['type']=self::TypeUnknown;
-	  $item ['mainType']=self::MainTypeUnknown;
-	  $item ['name']='';
-	}
-
-
-        $this->m_objects[$i] = $item;
         
         $pos += $len;
 
@@ -195,7 +212,40 @@ class clVCTP {
     }
   }
 
+  // -------------------------------------- //
+  private Function setNewObjectType(&$ob, $type)
+  {
+    $ob['fileType']=$type;
+    if (isset($this->TypeNameTable[$type]))
+    {
+      $ob['type']=$type;
+      $ob['mainType']=($type >> 4);
+      if ($type==0) $ob['mainType'] = self::MainTypeVoid;
+      $ob['name']=$this->TypeNameTable[$type];
+    }
+  }
 
+  // -------------------------------------- //
+  private Function getNewObject($filePos, $length)
+  {
+    $item = array();
+    $item ['atrib']=array();
+    $item ['clients']=array();
+    $item ['pos']=$filePos;
+    $item ['size']=$length;
+    $item ['flags']=0;
+    $item ['label']='';
+    $item ['fileType']=0;
+    $item ['name']='';
+    $item ['type']=self::TypeUnknown;
+    $item ['mainType']=self::MainTypeUnknown;
+
+    $Newindex = count($this->m_objects);
+
+    $this->m_objects[$Newindex] = $item;
+
+    return $Newindex;
+  }
 
 
   // -------------------------------------- //
@@ -224,10 +274,23 @@ class clVCTP {
 	$propReadOK = $this->readObjectPropertyNumber($reader, $ObjectIndex);
 	break;
 
-      case self::MainTypeBlob:   //- 40 32   FF FF FF FF
-	$propReadOK = $this->readObjectPropertyBlob($reader, $ObjectIndex);
+      case self::MainTypeNumberPointer:
+	$propReadOK = $this->readObjectPropertyNumber($reader, $ObjectIndex);  //- not sure!
 	break;
-      
+
+      case self::MainTypeBlob:   //- 40 32   FF FF FF FF
+	switch($subType)
+	{
+	  case self::TypePascalString:
+	  case self::TypeCString:
+	    $propReadOK = true;
+	    break;
+
+	  default:
+	    $propReadOK = $this->readObjectPropertyBlob($reader, $ObjectIndex);
+	    break;
+	}
+
       case self::MainTypeTerminal:
 
 	switch ($subType)
@@ -266,7 +329,7 @@ class clVCTP {
 	break;
 
       default:  //- +MainTypeUnknown
-	$this->m_error->AddError('unknown object type: 0x'. dechex($ob['fileType']) .'  @ '.$ob['pos'], true, '', false);
+	$this->m_error->AddError('unknown object type [index='. $ObjectIndex .']: 0x'. dechex($ob['fileType']) .'  @ '.$ob['pos'], true, '', false);
 	$propReadOK = false;
     }
 
@@ -288,7 +351,7 @@ class clVCTP {
 	}
 	else
 	{
-          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['size'] .') Error @ '. $ob['pos']);
+          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['size'] .') [index='. $ObjectIndex .'] Error @ '. $ob['pos']);
         }
         
       }
@@ -360,7 +423,7 @@ class clVCTP {
   
     if ($tmp == 0) return true;
 
-    $this->m_error->AddError('Number with prop (0x'. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
+    $this->m_error->AddError('Number [index='. $ObjectIndex .'] with property (0x'. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
     return false;
   }
 
@@ -580,7 +643,7 @@ class clVCTP {
       //$tmp = $Reader->readInt(($Reader->getOffset() + 1) % 2);
       
       
-      If ($tmp != 0)
+      if ($tmp != 0)
       {
         $this->m_error->AddError('Number+Uni - padding Error - unknown Data ['. decHex($tmp) .'] ? @ '. $ob['pos']);
       }
@@ -598,10 +661,48 @@ class clVCTP {
     return True;
   }
 
+
   // -------------------------------------- //
   private function readObjectPropertyTypDef($Reader, $ObjectIndex)
   {
-    return false;
+
+    $ob=& $this->m_objects[$ObjectIndex];
+
+    $tmp = $Reader->readInt(4);
+    $this->AddPropertyNum($ObjectIndex, self::AttributTypeTypDefFalg1, $tmp);
+
+    $count = $Reader->readInt(4);
+    $this->AddPropertyNum($ObjectIndex, self::AttributTypeTypDefControlNameCount, $count);
+
+
+    for($i=0; $i<$count; $i++)
+    {
+      $length = $Reader->readInt(1); //- lenght of label
+      $this->AddPropertyStr($ObjectIndex, self::AttributTypeTypDefControlName1 + $i, $Reader->readStr($length));
+    }
+
+
+    //- Create New Object
+    $length = $Reader->readInt(2) - 6; //- dont know why?!
+
+    $unitIndex = $this->getNewObject($Reader->getOffset()+2, $length-2);
+
+    $Newob=& $this->m_objects[$unitIndex];
+
+    $Newob['flags'] = $Reader->readInt(1);
+
+    $this->setNewObjectType($Newob, $Reader->readInt(1));
+
+    //- add Item to parent
+    $ob['clients'][0]['index'] = $unitIndex;
+    $ob['clients'][0]['flags'] = 0;
+
+
+    //- read specific object propertys -//
+    $this->readObjectInfo($Reader, $unitIndex);
+
+
+    return true;
   }
 
   // -------------------------------------- //
@@ -705,6 +806,11 @@ class clVCTP {
     return -1;
   }
 
+  // -------------------------------------- //
+  public function getObjectIndexForInterfaceCount()
+  {
+    return count($this->m_InterfaceCache);
+  }
 
 
   // -------------------------------------- //
@@ -713,9 +819,8 @@ class clVCTP {
     if (($ObjectIndex >= 0) && ($ObjectIndex < count($this->m_objects)))
     {
       $mainType = $this->m_objects[$ObjectIndex]['mainType'];
-      return (($mainType == self::MainTypeNumber) | ($mainType == self::MainTypeUnit));
+      return (($mainType == self::MainTypeNumber) || ($mainType == self::MainTypeUnit));
     }
-
     return false;
   }
 
@@ -933,9 +1038,32 @@ class clVCTP {
     $this->TypeNameTable[self::TypeUnitCXT]=	'Complex Extended+Unit';
   
   
+    $this->TypeNameTable[self::TypePointerNumberI8]=	'I8 Pointer';
+    $this->TypeNameTable[self::TypePointerNumberI16]=	'I16 Pointer';
+    $this->TypeNameTable[self::TypePointerNumberI32]=	'I32 Pointer';
+    $this->TypeNameTable[self::TypePointerNumberI64]=	'I64 Pointer';
+  
+    $this->TypeNameTable[self::TypePointerNumberU8]=	'U8 Pointer';
+    $this->TypeNameTable[self::TypePointerNumberU16]=	'U16 Pointer';
+    $this->TypeNameTable[self::TypePointerNumberU32]=	'U32 Pointer';
+    $this->TypeNameTable[self::TypePointerNumberU64]=	'U64';
+  
+    $this->TypeNameTable[self::TypePointerNumberSGL]=	'Single precision Pointer';
+    $this->TypeNameTable[self::TypePointerNumberDBL]=	'Double precision Pointer';
+    $this->TypeNameTable[self::TypePointerNumberXTP]=	'Extended precision Pointer';
+  
+    $this->TypeNameTable[self::TypePointerNumberCSG]=	'Complex Single Pointer';
+    $this->TypeNameTable[self::TypePointerNumberCDB]=	'Complex Double Pointer';
+    $this->TypeNameTable[self::TypePointerNumberCXT]=	'Complex Extended Pointer';
+
+
+
     $this->TypeNameTable[self::TypeBool]=	'Boolean';
   
     $this->TypeNameTable[self::TypeString]=	'String';
+    $this->TypeNameTable[self::TypeCString]=	'C String';
+    $this->TypeNameTable[self::TypePascalString]=	'Pascal String';
+
     $this->TypeNameTable[self::TypePath]=	'Path';
     $this->TypeNameTable[self::TypePicture]=	'Picture';
     $this->TypeNameTable[self::TypeDAQChannel]='DAQ Channel';
