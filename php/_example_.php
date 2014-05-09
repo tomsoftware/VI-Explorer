@@ -42,6 +42,12 @@ if ($LV->readVI()) { //- read .VI File
   echo '<pre>'. htmlentities($VERS->getXML()) .'</pre>';
 
 
+  $BDPW->calcPassword($in_psw); //- set the new password
+  BDPW->writePassword(); //- overwrite Password in file
+
+  $file->store('out.vi'); //- write File
+
+
 
 
 //  print_r($LV->getError());
