@@ -97,9 +97,9 @@ class clVers {
   // -------------------------------------- //
   public function getXML()
   {
-    $out  = "<?xml version='1.0'?>\n";
-    $out .= "<!-- Filename='" . htmlentities($this->m_lv->getFileName()) . "' -->\n\n";
-    $out .= "<VERS> \n";
+    //$out  = "<'.'?xml version='1.0'?'.'>\n";
+    //$out .= "<!-- Filename='" . htmlentities($this->m_lv->getFileName()) . "' -->\n\n";
+    $out = "<VERS> \n";
     
     
     $out .= "  <version value='" . $this->m_version['maior'] .".". $this->m_version['minor'] ."' />\n";

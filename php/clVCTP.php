@@ -383,9 +383,9 @@ class clVCTP {
     for($i=0;$i<$dimensions;$i++)
     {
       $tmp = $Reader->readInt(4);
-      if ($tmp != -1)
+      if ($tmp != 0xFFFFFFFF)
       {
-        $this->m_error->AddError('Array with property (index: '. i .' - flag: '. $tmp .' ? ) @ '. $ob['pos']);
+        $this->m_error->AddError('Array with property (index: '. $i .' - flag: '. $tmp .' ? ) @ '. $ob['pos']);
         $ok=false;
       }
     }
@@ -758,7 +758,7 @@ class clVCTP {
   {
     $tmp = $Reader->readInt(4);
   
-    if ($tmp == -1) return true; //- same as 0xffffffff
+    if ($tmp == 0xFFFFFFFF) return true; //- same as 0xffffffff
 
     $this->m_error->AddError('Blob with prop ('. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
     return false;
@@ -859,8 +859,8 @@ class clVCTP {
     //- Main run -//
     if (($index == -1) && ($deep==0) && ($ClientFlags==0))
     {
-      $out = "<?xml version='1.0'?>\n";
-      $out .= "<!-- Filename='". htmlentities($this->m_lv->getFileName()) ."' -->\n\n";
+      //$out  = "<'.'?xml version='1.0'?'.'>\n";
+      //$out .= "<!-- Filename='". htmlentities($this->m_lv->getFileName()) ."' -->\n\n";
       $out .= "<VCTP>\n";
     
       foreach ($this->m_objects as $i=>$ob)
@@ -1062,7 +1062,7 @@ class clVCTP {
   
     $this->TypeNameTable[self::TypeString]=	'String';
     $this->TypeNameTable[self::TypeCString]=	'C String';
-    $this->TypeNameTable[self::TypePascalString]=	'Pascal String';
+    $this->TypeNameTable[self::TypePascalString]='Pascal String';
 
     $this->TypeNameTable[self::TypePath]=	'Path';
     $this->TypeNameTable[self::TypePicture]=	'Picture';

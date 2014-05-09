@@ -8,7 +8,7 @@ class clFile
 
 
   // -------------------------------------- //
-  function __construct() {
+  public function __construct() {
     $this->error=array();
   }
 
@@ -99,7 +99,7 @@ class clFileReader
   private $m_eof=true;
 
   // -------------------------------------- //
-  function __construct($clFile, $offset=0, $hiddenoffset=0, $blocklen=-1) {
+  public function __construct($clFile, $offset=0, $hiddenoffset=0, $blocklen=-1) {
     $this->clF = $clFile;
     $this->offset=$offset;
     $this->hiddenoffset=$hiddenoffset;

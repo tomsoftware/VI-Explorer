@@ -255,12 +255,13 @@ class clIcon {
 
   private static $s_LABVIEW_COLOR_PALETTE_16 = array (0xFFFFFF, 0xFFFF00, 0x000080, 0xFF0000, 0xFF00FF, 0x800080, 0x0000FF, 0x00FFFF, 0x00FF00, 0x008000, 0x800000, 0x808000, 0xC0C0C0, 0x808080,  0x008080, 0x000000);
 
+
   // -------------------------------------- //
   public function getXML()
   {
-    $out = "<?xml version='1.0'?>\n";
-    $out .=  "<!-- Filename='". htmlentities($this->m_lv->getFileName()) ."' -->\n\n";
-    $out .=  "<ICON>\n";
+    //$out  = "<'.'?xml version='1.0'?'.'>\n";
+    //$out .=  "<!-- Filename='". htmlentities($this->m_lv->getFileName()) ."' -->\n\n";
+    $out =  "<ICON>\n";
 
 
     foreach($this->m_img as $index=>$icon)

@@ -270,7 +270,7 @@ class clLabView
   public function getICON()
   {
     if (!isset($this->lvObj['ICON'])) {
-      include_once('clICON.php');
+      include_once('clIcon.php');
 
       $this->lvObj['ICON'] = new clICON($this);
     }

@@ -140,14 +140,14 @@ class clBDPW {
 	    $findOK=true;
 	    break;
 	  }
-	}
 
-	//- OK test if it is just {0 0 0}
-	if (!$findOK)
-	{
-	  $salt = $this->getSaltString(0, 0, 0);
+	  //- OK test if it is just {0 0 0}
+	  if (!$findOK)
+	  {
+	    $salt = $this->getSaltString(0, 0, 0);
 
-	  if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1']) return $out; //- Fail!
+	    if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1']) return $out; //- Fail!
+	  }
 	}
       }
       else
@@ -297,7 +297,7 @@ class clBDPW {
   // -------------------------------------- //
   public function getPasswordHash($seperator='')
   {
-    if (count($this->m_password)>0) return $this->toHex($this->m_password['password_md5'],$seperator);
+    if (count($this->m_file_psw)>0) return $this->m_lv->toHex($this->m_file_psw['password_md5'], $seperator);
     return '';
   }
 
@@ -305,9 +305,9 @@ class clBDPW {
   // -------------------------------------- //
   public function getXML()
   {
-    $out = "<?xml version='1.0'?>\n";
-    $out .=  "<!-- Filename='". htmlentities($this->m_lv->getFileName()) ."' -->\n\n";
-    $out .=  "<BDPW>\n";
+    //$out  = "<'.'?xml version='1.0'?'.'>\n";
+    //$out .=  "<!-- Filename='". htmlentities($this->m_lv->getFileName()) ."' -->\n\n";
+    $out  = "<BDPW>\n";
     
     $out .=  "  <hash type='password' value='". bin2hex($this->m_file_psw['password_md5']) ."' /> \n";
     $out .=  "  <hash type='hash1' value='".  bin2hex($this->m_file_psw['hash_1']) ."' /> \n";
