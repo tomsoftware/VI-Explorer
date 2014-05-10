@@ -178,6 +178,13 @@ class clFileReader
   }
 
   // -------------------------------------- //
+  public function store($filename) {
+    return file_put_contents($filename, $this->readStr($this->blocklen, 0));
+  }
+
+
+
+  // -------------------------------------- //
   // - returns signed (e.g. negativ) intager values
   public function readInt($size=4, $offset=-1)
   {

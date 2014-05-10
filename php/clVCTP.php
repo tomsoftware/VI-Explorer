@@ -383,7 +383,7 @@ class clVCTP {
     for($i=0;$i<$dimensions;$i++)
     {
       $tmp = $Reader->readInt(4);
-      if ($tmp != 0xFFFFFFFF)
+      if (($tmp != 0xFFFFFFFF) && ($tmp != -1)) //- depending on platform 32/64 Bit
       {
         $this->m_error->AddError('Array with property (index: '. $i .' - flag: '. $tmp .' ? ) @ '. $ob['pos']);
         $ok=false;
@@ -758,7 +758,7 @@ class clVCTP {
   {
     $tmp = $Reader->readInt(4);
   
-    if ($tmp == 0xFFFFFFFF) return true; //- same as 0xffffffff
+    if (($tmp == 0xFFFFFFFF) || ($tmp == -1)) return true; //- same as 0xffffffff
 
     $this->m_error->AddError('Blob with prop ('. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
     return false;

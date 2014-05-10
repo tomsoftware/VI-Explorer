@@ -49,13 +49,16 @@ class clBDPW {
     $this->m_VERS = $lv->getVERS();
     $this->m_VERS->getError()->CopyErrorsTo($this->m_error);
   
-
+    //- read psw + hash1 + hash2
     $this->m_file_psw = $this->readBDPW();
+    $this->m_set_md5_psw = $this->m_file_psw['password_md5'];
 
 
     //- calc current Salt (sometimes we are not able to read the salt from file: in this case the salt is "brute-force")
     $hash = $this->getHash($this->m_file_psw['password_md5'], True);
     $this->m_file_psw['salt'] = $hash->salt;
+
+
 
     if (!$hash->isOK) $this->m_error->AddError('Unable to detect the salt!');
 
@@ -220,7 +223,6 @@ class clBDPW {
 
 
 
-
   // -------------------------------------- //
   private function getSaltString($v1=0, $v2=0, $v3=0)
   {
@@ -229,19 +231,25 @@ class clBDPW {
 
 
   // -------------------------------------- //
-  public function calcPassword($newPassword)
+  public function setPassword($newPassword)
   {
-    $md5_password = md5($newPassword, true);
+    $this->m_set_md5_psw = md5($newPassword, true);
+  }
 
-    $hash = $this->getHash($md5_password);
+
+  // -------------------------------------- //
+  public function calcPasswordHashs()
+  {
+    $this->m_password_set = array();
+
+    $hash = $this->getHash($this->m_set_md5_psw);
 
     if ($hash->isOK)
     {
 
       $out = array();
 
-      $out['password']=$newPassword;
-      $out['password_md5']=$md5_password;
+      $out['password_md5']=$this->m_set_md5_psw;
       $out['hash_1']=$hash->hash1;
       $out['hash_2']=$hash->hash2;
       $out['salt']=$hash->salt;
@@ -254,15 +262,16 @@ class clBDPW {
     $this->m_error->AddError('Error crating new password hashs!');
 
     return false;
-
   }
 
 
-
   // -------------------------------------- //
-  public function writePassword() {
+  public function writePasswordHashs()
+  {
 
     $set_psw = $this->m_password_set;
+
+    
 
     if (count($set_psw)>0)
     {
@@ -270,7 +279,11 @@ class clBDPW {
 
       $BDPW_content->writeStr($set_psw['password_md5'], 0);
       $BDPW_content->writeStr($set_psw['hash_1']);
-      $BDPW_content->writeStr($set_psw['hash_2']);
+
+      if ($this->m_VERS->getMaior() >= 8) //- before 8 there were no second hash
+      {
+        $BDPW_content->writeStr($set_psw['hash_2']);
+      }
     }
     
   }

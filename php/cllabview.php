@@ -180,6 +180,29 @@ class clLabView
   }
 
 
+  /** --------------------------------------
+   * @abstract writes the VI back to disk
+   * @return true on success  */
+  public function store($newFilename)
+  {
+
+    $myBSPW = $this->getBDPW();
+
+    $hashOK = $myBSPW->calcPasswordHashs(); //- update the hashes
+
+    if ($hashOK)
+    {
+      $myBSPW->writePasswordHashs(); //- overwrite Password
+
+
+      return $this->FileReader->store($newFilename); //- write File to disk
+    }
+
+    //- unable to clac Hash
+    return $this->setError('Sorry, Unable to calc Hash/Password - wrong Version?');
+  }
+
+
 
   /** --------------------------------------
    * @abstract returns the VI BDHb or BDHc container Object that contains the Source Code
