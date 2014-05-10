@@ -26,26 +26,31 @@ if ($LV->readVI()) { //- read .VI File
 
   $BDPW = $LV->getBDPW();
 
+
+  $BDPW->setPassword('new Password!'); //- set the new password
+
+
+
+  //-- just debugging ----
   $VCTP = $LV->getVCTP();
 
   $VERS = $LV->getVERS();
 
-
   echo '<pre>'. htmlentities($BDPW->getXML()) .'</pre>';
-
   echo '<hr />';
-
   echo '<pre>'. htmlentities($VCTP->getXML()) .'</pre>';
-
   echo '<hr />';
-
   echo '<pre>'. htmlentities($VERS->getXML()) .'</pre>';
+  //-- end debugging ----
 
 
-  $BDPW->calcPassword($in_psw); //- set the new password
-  BDPW->writePassword(); //- overwrite Password in file
 
-  $file->store('out.vi'); //- write File
+
+  //- save the .VI
+  if (!$LV->store('out.vi'))
+  {
+    echo '<b>Error: </b><pre>'. print_r($LV->getErrorStr(),true) .'</pre>';
+  }
 
 
 

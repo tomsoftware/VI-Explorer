@@ -539,7 +539,7 @@ class clVCTP {
 
       Case 0x12:
 	$refTypeName = 'Queue';
-	$ret = readObjectPropertyRefQueue($Reader, $ObjectIndex);
+	$ret = $this->readObjectPropertyRefQueue($Reader, $ObjectIndex);
 	break;
 
       Case 0x14:
@@ -566,19 +566,114 @@ class clVCTP {
   // -------------------------------------- //
   private function readObjectPropertyRefControl($Reader, $ObjectIndex)
   {
-    return false;
+
+    $ob=& $this->m_objects[$ObjectIndex];
+
+
+    $count = $Reader->readInt(2); //- item count
+    
+    if ($count <= 1)
+    {
+    
+      for ($i = 0; $i<1; $i++)
+      {
+        //- add Item to parent
+        $ob['clients'][$i]['index'] = $Reader->readInt(2);
+        $ob['clients'][$i]['flags'] = 0;
+      }
+
+      
+      $count = $Reader->readInt(2); //- dont know count
+      $this->AddPropertyNum($ObjectIndex, self::AttributTypeRefControlFlags, $count);
+
+      return true;
+
+    }
+    else
+    {
+
+      $this->m_error->AddError('[readObjectPropertyRefControl]  - Unknown value/count (0x'. dechex($count) .') ? @ '. $ob['pos']);
+
+      return false;
+    }
   }
+
+
+
 
   // -------------------------------------- //
   private function readObjectPropertyRefEventRegist($Reader, $ObjectIndex)
   {
-    return false;
+
+    $ob=& $this->m_objects[$ObjectIndex];
+
+     //- dont know this data!
+    $tmp1 = $Reader->readInt(2);
+    $tmp2 = $Reader->readInt(2);
+    $tmp3 = $Reader->readInt(2);
+    $tmp4 = $Reader->readInt(2);
+    $tmp5 = $Reader->readInt(2);
+
+    
+    if (($tmp1 == 0) && ($tmp2 == 1) && ($tmp3 == 1) && ($tmp4 == 0))
+    {
+      $this->AddPropertyNum($ObjectIndex, self::AttributTypeRefEventRegistFlags, $tmp5);
+    
+      $count = 1; //- dont know if $tmp2 or $tmp3??
+
+
+      for ($i = 0; $i<1; $i++)
+      {
+        //- add Item to parent
+        $ob['clients'][$i]['index'] = $Reader->readInt(2);
+        $ob['clients'][$i]['flags'] = 0;
+      }
+
+
+      return true;
+    }
+    else
+    {
+
+      $this->m_error->AddError('[readObjectPropertyRefEventRegist]  - Unknown value {0x'. dechex($tmp1) .', 0x'. dechex($tmp2) .', 0x'. dechex($tmp3) .', 0x'. dechex($tmp4) .', 0x'. dechex($tmp5) .'} ? @ '. $ob['pos']);
+
+      return false;
+    }
+    
+
+    
   }
 
   // -------------------------------------- //
   private function readObjectPropertyRefQueue($Reader, $ObjectIndex)
   {
-    return false;
+
+    $ob=& $this->m_objects[$ObjectIndex];
+
+
+    $count = $Reader->readInt(2); //-item count
+
+    if ($count <= 1)
+    {
+      
+      for ($i = 0; $i<1; $i++)
+      {
+        //- add Item to parent
+        $ob['clients'][$i]['index'] = $Reader->readInt(2);
+        $ob['clients'][$i]['flags'] = 0;
+      }
+
+
+      return true;
+    }
+    else
+    {
+      
+      $this->m_error->AddError('[readObjectPropertyRefQueue]  - Unknown value/count ['. decHex($tmp) .'] ? @ '. $ob['pos']);
+      return false;
+    }
+
+    
   }
 
 

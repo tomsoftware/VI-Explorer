@@ -15,6 +15,7 @@ class clBDPW {
   private $m_reader; //- clFileReader
 
   private $m_set_md5_psw; //- String
+  private $m_isHashReadOK;  //- Boolean
 
   //- Information about the file password
   private $m_file_psw=array();
@@ -30,6 +31,7 @@ class clBDPW {
     $this->m_lv = $lv;
     $this->m_FileHasPassword = false;
     $this->m_error = new clError('clBDPW');
+    $this->m_isHashReadOK = false;
 
 
     If (!$lv->BlockNameExists('BDPW'))
@@ -59,7 +61,7 @@ class clBDPW {
     $this->m_file_psw['salt'] = $hash->salt;
 
 
-
+    $this->m_isHashReadOK = $hash->isOK;
     if (!$hash->isOK) $this->m_error->AddError('Unable to detect the salt!');
 
   }
@@ -234,6 +236,7 @@ class clBDPW {
   public function setPassword($newPassword)
   {
     $this->m_set_md5_psw = md5($newPassword, true);
+    return $this->m_isHashReadOK;
   }
 
 
@@ -244,7 +247,7 @@ class clBDPW {
 
     $hash = $this->getHash($this->m_set_md5_psw);
 
-    if ($hash->isOK)
+    if (($hash->isOK) && ($this->m_isHashReadOK))
     {
 
       $out = array();
@@ -273,7 +276,7 @@ class clBDPW {
 
     
 
-    if (count($set_psw)>0)
+    if ((count($set_psw)>0) && ($this->m_FileHasPassword))
     {
       $BDPW_content = $this->m_lv->getBlockContent('BDPW', false);
 
@@ -284,8 +287,11 @@ class clBDPW {
       {
         $BDPW_content->writeStr($set_psw['hash_2']);
       }
+
+      return true;
     }
     
+    return false;
   }
 
 
