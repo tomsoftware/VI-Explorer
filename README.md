@@ -1,9 +1,10 @@
 VI-Explorer
 ===========
-(not stable!! - source is currently rewritten!!)
+(not stable!! but working :-) )
 
+This version should be/is compatible with Labview VI-Fileformat from 5.0 up to Labview 2013
 
-This version shoud be compatible with VI-Fileformat from Labview 8.0 to Labview 2012
+see example code: "_example_.php"
 
 Features:
 - open VI-file
