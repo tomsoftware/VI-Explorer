@@ -48,6 +48,7 @@ class clVCTP {
     const AttributTypeRefTypeName = 0x72;
     const AttributTypeRefControlFlags = 0x73;
     const AttributTypeRefEventRegistFlags = 0x74;
+    const AttributTypeRefDataValFlags = 0x75;
     const AttributTypeTerminalPattern = 0xF1; //- Index of pattern type for terminal
     const AttributTypeTerminalFlags = 0xF2;   //- seperarot between Index-List and Flags-List: 0x0300 or 0x0200 ???
     const AttributTypeTypDefFalg1 = 0xF5;
@@ -546,13 +547,18 @@ class clVCTP {
 	$refTypeName = 'Channel';
 	break;
 
+      Case 0x20:
+	$refTypeName = 'data value reference';
+	$ret = $this->readObjectPropertyRefDataValue($Reader, $ObjectIndex);
+	break;
+
       Case 0x1E:
 	$refTypeName = 'Class';
 	break;
 
       default:
 	$refTypeName = '[unknown]';
-	$this->m_error->AddError('Unknown refenence Type (0x'. dechex($refType) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
+	$this->m_error->AddError('Unknown refenence Type (index: '. $ObjectIndex .' - 0x'. dechex($refType) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
 	break;
     }
   
@@ -561,6 +567,44 @@ class clVCTP {
   
     return $ret;
   }
+
+
+  // -------------------------------------- //
+  private function readObjectPropertyRefDataValue($Reader, $ObjectIndex)
+  {
+
+    $ob=& $this->m_objects[$ObjectIndex];
+
+
+    $count = $Reader->readInt(2); //- item count
+    
+    if ($count <= 1)
+    {
+    
+      for ($i = 0; $i<1; $i++)
+      {
+        //- add Item to parent
+        $ob['clients'][$i]['index'] = $Reader->readInt(2);
+        $ob['clients'][$i]['flags'] = 0;
+      }
+
+      
+      $value = $Reader->readInt(1); //- dont know value
+      $this->AddPropertyNum($ObjectIndex, self::AttributTypeRefDataValFlags, $value);
+
+      return true;
+
+    }
+    else
+    {
+
+      $this->m_error->AddError('[readObjectPropertyRefControl]  - Unknown value/count (0x'. dechex($count) .') ? @ '. $ob['pos']);
+
+      return false;
+    }
+  }
+
+
 
 
   // -------------------------------------- //
@@ -597,9 +641,6 @@ class clVCTP {
       return false;
     }
   }
-
-
-
 
   // -------------------------------------- //
   private function readObjectPropertyRefEventRegist($Reader, $ObjectIndex)
@@ -740,7 +781,7 @@ class clVCTP {
       
       if ($tmp != 0)
       {
-        $this->m_error->AddError('Number+Uni - padding Error - unknown Data ['. decHex($tmp) .'] ? @ '. $ob['pos']);
+        $this->m_error->AddError('Number+Uni - padding Error - unknown Data ['. decHex($tmp) .'] ? index='. $ObjectIndex .' @ '. $ob['pos']);
       }
     }
     
@@ -749,7 +790,7 @@ class clVCTP {
     $tmp = $Reader->readInt(1);
     If ($tmp != 0)
     {
-      $this->m_error->AddError('Number+Uni - Unknown Data ['. decHex($tmp) .'] Property? @ '. $ob['pos']);
+      $this->m_error->AddError('Number+Uni - Unknown Data ['. decHex($tmp) .'] Property? index='. $ObjectIndex .' @ '. $ob['pos']);
     }
 
 
@@ -1199,7 +1240,11 @@ class clVCTP {
     
     $this->AttributNameTable[self::AttributTypeRefControlFlags]=	'RefControlFlags';
     $this->AttributNameTable[self::AttributTypeRefEventRegistFlags]=	'RefEventRegistFlags';
+
+    $this->AttributNameTable[self::AttributTypeRefDataValFlags]=	'RefDataValeuFlags';
   
+
+
     $this->AttributNameTable[self::AttributTypeUnknown]=		'_unknown_';
     
   }

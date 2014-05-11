@@ -199,7 +199,7 @@ class clLabView
     }
 
     //- unable to clac Hash
-    return $this->setError('Sorry, Unable to calc Hash/Password -> save .vi-file as Version 2011 and try again. ');
+    return $this->setError('Sorry, Unable to calc Hash/Password/Salt -> save .vi-file as Version 2011 and try again. ');
   }
 
 
