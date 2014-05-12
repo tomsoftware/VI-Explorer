@@ -145,14 +145,14 @@ class clBDPW {
 	    $findOK=true;
 	    break;
 	  }
+        }
 
-	  //- OK test if it is just {0 0 0}
-	  if (!$findOK)
-	  {
-	    $salt = $this->getSaltString(0, 0, 0);
+	//- OK test if it is just {0 0 0}
+	if (!$findOK)
+	{
+	  $salt = $this->getSaltString(0, 0, 0);
 
-	    if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1']) return $out; //- Fail!
-	  }
+	  if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1']) return $out; //- Fail!
 	}
       }
       else
@@ -262,7 +262,7 @@ class clBDPW {
       return true;
     }
 
-    $this->m_error->AddError('Error crating new password hashs!');
+    $this->m_error->AddError('Error creating new password hash!');
 
     return false;
   }

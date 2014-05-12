@@ -529,6 +529,33 @@ class clVCTP {
         $ret = $this->readObjectPropertyRefQueue($Reader, $ObjectIndex);
 	break;
 
+
+     Case 0x5:
+	$refTypeName = 'TCP connection';
+	$ret = True;
+	break;
+
+      Case 0x10:
+	$refTypeName = 'UDP connection';
+	$ret = True;
+	break;
+
+      Case 0x13:
+	$refTypeName = 'IrDA connection';
+	$ret = True;
+	break;
+      
+      Case 0x1F:
+	$refTypeName = 'Bluetooth connection';
+	$ret = True;
+	break;
+
+      Case 0x15:
+	$refTypeName = 'Shared variable';
+	$ret = false;
+	break;
+
+
       Case 0xD:
         $refTypeName = 'DataSocket';
 	break;
@@ -598,7 +625,7 @@ class clVCTP {
     else
     {
 
-      $this->m_error->AddError('[readObjectPropertyRefControl]  - Unknown value/count (0x'. dechex($count) .') ? @ '. $ob['pos']);
+      $this->m_error->AddError('[readObjectPropertyRefDataValue]  - Unknown value/count (0x'. dechex($count) .') ? @ '. $ob['pos']);
 
       return false;
     }
