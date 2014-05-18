@@ -540,6 +540,11 @@ class clVCTP {
 	$ret = True;
 	break;
 
+      Case 0x11:
+	$refTypeName = 'Notifier Refnum';
+	$ret = $this->readObjectProperty_0Pre0Post($Reader, $ObjectIndex);
+	break;
+
       Case 0x13:
 	$refTypeName = 'IrDA connection';
 	$ret = True;
@@ -562,7 +567,7 @@ class clVCTP {
 
       Case 0x8:
 	$refTypeName = 'Control'; //- Control Refnum
-	$ret = $this->readObjectPropertyRefControl($Reader, $ObjectIndex);
+	//$ret = $this->readObjectPropertyRefControl($Reader, $ObjectIndex); //- don't count this for password salt!
 	break;
 
       Case 0x12:
@@ -578,6 +583,14 @@ class clVCTP {
 	$refTypeName = 'data value reference';
 	$ret = $this->readObjectPropertyRefDataValue($Reader, $ObjectIndex);
 	break;
+
+      Case 0x21:
+	$refTypeName = 'fifo refnum';
+	$ret = $this->readObjectProperty_0Pre0Post($Reader, $ObjectIndex);
+	break;
+
+
+
 
       Case 0x1E:
 	$refTypeName = 'Class';
@@ -626,6 +639,38 @@ class clVCTP {
     {
 
       $this->m_error->AddError('[readObjectPropertyRefDataValue]  - Unknown value/count (0x'. dechex($count) .') ? @ '. $ob['pos']);
+
+      return false;
+    }
+  }
+
+  // -------------------------------------- //
+  private function readObjectProperty_0Pre0Post($Reader, $ObjectIndex)
+  {
+
+    $ob=& $this->m_objects[$ObjectIndex];
+
+
+    $count = $Reader->readInt(2); //- item count
+    
+    if ($count <= 1)
+    {
+    
+      for ($i = 0; $i<1; $i++)
+      {
+        //- add Item to parent
+        $ob['clients'][$i]['index'] = $Reader->readInt(2);
+        $ob['clients'][$i]['flags'] = 0;
+      }
+
+
+      return true;
+
+    }
+    else
+    {
+
+      $this->m_error->AddError('[readObjectProperty_0Pre0Post]  - Unknown value/count (0x'. dechex($count) .') ? @ '. $ob['pos']);
 
       return false;
     }
@@ -683,8 +728,8 @@ class clVCTP {
     $tmp5 = $Reader->readInt(2);
 
     
-    if (($tmp1 == 0) && ($tmp2 == 1) && ($tmp3 == 1) && ($tmp4 == 0))
-    {
+    //if (($tmp1 == 0) && ($tmp2 == 1) && ($tmp3 == 1) && ($tmp4 == 0))
+    //{
       $this->AddPropertyNum($ObjectIndex, self::AttributTypeRefEventRegistFlags, $tmp5);
     
       $count = 1; //- dont know if $tmp2 or $tmp3??
@@ -699,14 +744,14 @@ class clVCTP {
 
 
       return true;
-    }
-    else
-    {
-
-      $this->m_error->AddError('[readObjectPropertyRefEventRegist]  - Unknown value {0x'. dechex($tmp1) .', 0x'. dechex($tmp2) .', 0x'. dechex($tmp3) .', 0x'. dechex($tmp4) .', 0x'. dechex($tmp5) .'} ? @ '. $ob['pos']);
-
-      return false;
-    }
+    //}
+    //else
+    //{
+    //
+    //  $this->m_error->AddError('[readObjectPropertyRefEventRegist]  - Unknown value {0x'. dechex($tmp1) .', 0x'. dechex($tmp2) .', 0x'. dechex($tmp3) .', 0x'. dechex($tmp4) .', 0x'. dechex($tmp5) .'} ? @ '. $ob['pos']);
+    //
+    //  return false;
+    //}
     
 
     

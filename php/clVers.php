@@ -36,7 +36,7 @@ class clVers {
   
       if ($v != 0)
       {
-        $this->m_error->AddError('Verion - wrong data format (value: '. $v .' should be 0)!');
+        $this->m_error->AddError('Version - wrong data format? (value: '. $v .' should be 0)!');
 	return false;
       }
   

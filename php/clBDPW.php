@@ -190,7 +190,7 @@ class clBDPW {
   // -------------------------------------- //
   private function countTerminals($ObjectIndex)
   {
-
+    
     $VCTP = & $this->m_VCTP;
 
     $out = new stdClass();
