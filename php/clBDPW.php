@@ -139,6 +139,8 @@ class clBDPW {
 
 	  $salt = $this->getSaltString($count->numCount, $count->strCount, $count->pathCount);
 
+	  //echo 'debug:'. $count->numCount .' '. $count->strCount .' '. $count->pathCount .' - '. $this->m_lv->toHex($salt) .' <br />';
+
 	  //- test Salt
 	  if (md5($md5password . $data . $salt, true) == $this->m_file_psw['hash_1'])
 	  {

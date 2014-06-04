@@ -567,7 +567,7 @@ class clVCTP {
 
       Case 0x8:
 	$refTypeName = 'Control'; //- Control Refnum
-	//$ret = $this->readObjectPropertyRefControl($Reader, $ObjectIndex); //- don't count this for password salt!
+	$ret = $this->readObjectPropertyRefControl($Reader, $ObjectIndex);
 	break;
 
       Case 0x12:
@@ -621,7 +621,7 @@ class clVCTP {
     if ($count <= 1)
     {
     
-      for ($i = 0; $i<1; $i++)
+      for ($i = 0; $i<$count; $i++)
       {
         //- add Item to parent
         $ob['clients'][$i]['index'] = $Reader->readInt(2);
@@ -656,7 +656,7 @@ class clVCTP {
     if ($count <= 1)
     {
     
-      for ($i = 0; $i<1; $i++)
+      for ($i = 0; $i<$count; $i++)
       {
         //- add Item to parent
         $ob['clients'][$i]['index'] = $Reader->readInt(2);
@@ -691,7 +691,7 @@ class clVCTP {
     if ($count <= 1)
     {
     
-      for ($i = 0; $i<1; $i++)
+      for ($i = 0; $i<$count; $i++)
       {
         //- add Item to parent
         $ob['clients'][$i]['index'] = $Reader->readInt(2);
@@ -699,7 +699,7 @@ class clVCTP {
       }
 
       
-      $count = $Reader->readInt(2); //- dont know count
+      $count = $Reader->readInt(4); //- dont know count
       $this->AddPropertyNum($ObjectIndex, self::AttributTypeRefControlFlags, $count);
 
       return true;
@@ -735,7 +735,7 @@ class clVCTP {
       $count = 1; //- dont know if $tmp2 or $tmp3??
 
 
-      for ($i = 0; $i<1; $i++)
+      for ($i = 0; $i<$count; $i++)
       {
         //- add Item to parent
         $ob['clients'][$i]['index'] = $Reader->readInt(2);
@@ -769,7 +769,7 @@ class clVCTP {
     if ($count <= 1)
     {
       
-      for ($i = 0; $i<1; $i++)
+      for ($i = 0; $i<$count; $i++)
       {
         //- add Item to parent
         $ob['clients'][$i]['index'] = $Reader->readInt(2);
