@@ -18,11 +18,12 @@
 // -------------------------------
 
 include_once('clFile.php');
+include_once('clError.php');
 
 class clLabView
 {
 
-  private $error=array();
+  private $m_error=array();
   private $FileReader;
 
   //- Information about the data-containers / data-blocks
@@ -47,6 +48,7 @@ class clLabView
    */
   function __construct($FReader) {
 
+    $this->m_error = new clError('clLabView');
     $this->lvObj=array();
     $this->FileReader = $FReader;
   }
@@ -76,10 +78,10 @@ class clLabView
       $this->m_FileHead['HeadIdentifier3'] = $FReader->readStr(4);
       $this->m_FileHead['HeadIdentifier4'] = $FReader->readStr(4);
     
-      if ($this->m_FileHead['HeadIdentifier1'] != "RSRC\r\n")    return $this->setError('Wrong File Format: missing HeadIdentifier1: RSRC');
-      if ($this->m_FileHead['HeadIdentifier3'] == 'LVAR')        return $this->setError('This program does not support .lvlib / LabView-LIB-files : wrong value for HeadIdentifier3: LVAR');
-      if ($this->m_FileHead['HeadIdentifier3'] != 'LVIN')        return $this->setError('Wrong File Format: missing HeadIdentifier3: LVIN');
-      if ($this->m_FileHead['HeadIdentifier4'] != 'LBVW')        return $this->setError('Wrong File Format: missing HeadIdentifier4: LBVW');
+      if ($this->m_FileHead['HeadIdentifier1'] != "RSRC\r\n")    return $this->m_error->addError('Wrong File Format: missing HeadIdentifier1: RSRC');
+      if ($this->m_FileHead['HeadIdentifier3'] == 'LVAR')        return $this->m_error->addError('This program does not support .lvlib / LabView-LIB-files : wrong value for HeadIdentifier3: LVAR');
+      if ($this->m_FileHead['HeadIdentifier3'] != 'LVIN')        return $this->m_error->addError('Wrong File Format: missing HeadIdentifier3: LVIN');
+      if ($this->m_FileHead['HeadIdentifier4'] != 'LBVW')        return $this->m_error->addError('Wrong File Format: missing HeadIdentifier4: LBVW');
 
     
       $this->m_FileHead['RSRCOffset'] = $FReader->readInt(4);
@@ -90,7 +92,7 @@ class clLabView
         $curPos = $this->m_FileHead['RSRCOffset'];
       }
       else {
-        return $this->setError('Wrong RSRC-Haeder');
+        return $this->m_error->addError('Wrong RSRC-Haeder');
       }
 
     }
@@ -116,7 +118,7 @@ class clLabView
     $FReader->setOffset( $this->m_FileHead['BlockInfoOffset'] );
     $this->BlockInfoCount= $FReader->readInt() + 1;
   
-    if ($this->BlockInfoCount > 1000) return $this->setError('VI.BlockInfoCount to large?!');
+    if ($this->BlockInfoCount > 1000) return $this->m_error->addError('VI.BlockInfoCount to large?!');
 
   
     $this->BlockInfo = array();
@@ -199,7 +201,7 @@ class clLabView
     }
 
     //- unable to clac Hash
-    return $this->setError('Sorry, Unable to calc Hash/Password/Salt -> save .vi-file as Version 2011 and try again. ');
+    return $this->m_error->addError('Sorry, Unable to calc Hash/Password/Salt -> save .vi-file as Version 2011 and try again.');
   }
 
 
@@ -355,7 +357,7 @@ class clLabView
       $sumSize += 4; //- 4 Byte for size
 
       if ($sumSize + $size > $this->BlockInfo[$BlockID]['BlockFileSize']) {
-        $this->setError('getBlockContentById() - out of Block/container data');
+        $this->m_error->addError('getBlockContentById() - out of Block/container data');
         $file = new clFile();
         return $file->getFileReader();
       }
@@ -404,14 +406,14 @@ class clLabView
     $file = new clFile();
 
     if ($size<2) {
-      $this->setError('unable to decompress section [#'. $info_blockID .']: block-size-error - size: '. $size);
+      $this->m_error->addError('unable to decompress section [#'. $info_blockID .']: block-size-error - size: '. $size);
       return $file->getFileReader(); //- empty File
     }
 
     $usize=$data->readInt(4);
     
     if ((($usize+30) < $size) || ($usize > ($size * 10))) {
-      $this->setError('unable to decompress section [#'. $info_blockID .']: uncompress-size-error - size: '. $size .' - uncompress-size:'. $usize);
+      $this->m_error->addError('unable to decompress section [#'. $info_blockID .']: uncompress-size-error - size: '. $size .' - uncompress-size:'. $usize);
       return $file->getFileReader(); //- empty File
     }
     
@@ -420,7 +422,7 @@ class clLabView
 
     if (strlen($ucdata)<1) {
 
-      $this->setError('unable to decompress section [#'. $info_blockID .']: gzuncompress-error');
+      $this->m_error->addError('unable to decompress section [#'. $info_blockID .']: gzuncompress-error');
       return $file->getFileReader(); //- empty File
     }
 
@@ -439,9 +441,9 @@ class clLabView
     $out= '';
 
 
-    if (count($this->error)>0) {
+    if ($this->m_error->getErrorCount()>0) {
       $out .= '-- Errors --' .$nl;
-      $out .= 'Errors : '. print_r($this->error, true) .$nl;
+      $out .= 'Errors : '. $this->m_error->getErrorString(true) .$nl;
     }
 
 
@@ -475,6 +477,32 @@ class clLabView
     return $out;
   }
 
+  // -------------------------------------- //
+  public function getXML() {
+    
+    $out = print_r($this->BlockInfo,true);
+
+
+    //$out  = "<'.'?xml version='1.0'?'.'>\n";
+    //$out .=  "<!-- Filename='". htmlentities($this->m_lv->getFileName()) ."' -->\n\n";
+    $out  = "<VI>\n";
+    
+
+    foreach($this->BlockInfo as $b)
+    {
+      $out .=  "  <block name='". $b['BlockName'] ."' offset='". $b['BlockOffset'] ."' infoOffset='". $b['BlockInfoOffset'] ." containerCount='". $b['BlockCount'] ."'/> \n";
+    }
+
+
+    $out .=  $this->m_error->getXML();
+
+
+    $out .=  "</VI>\n";
+
+
+    return $out;
+  }
+
 
 
   // -------------------------------------- //
@@ -482,23 +510,18 @@ class clLabView
    * @abstract returns a Array with all Errors and reset the Error Handler
    * @return array Array with all Errors 
    */
-  public function getError() {
-    $ret = $this->error;
-    $this->error=array();
+  public function getError()
+  {
+    $ret = $this->m_error->getErrorString();
+    $this->m_error->reset();
     return $ret;
   }
 
 
 
   // -------------------------------------- //
-  private function setError($errStr) {
-    $this->error[]=$errStr;
-    return false;
-  }
-
-  // -------------------------------------- //
-  public static function toHex($value, $padding=' ') {
-
+  public static function toHex($value, $padding=' ')
+  {
     if (is_int($value))
     {
       return '0x'. dechex($value);

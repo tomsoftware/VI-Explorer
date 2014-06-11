@@ -24,7 +24,7 @@ class clError
 
     foreach($this->m_error as $err)
     {
-      If (($showWarnings) || ($err['isWarning'] == False))
+      if (($showWarnings) || ($err['isWarning'] == False))
       {
         $out .= $this->formErrorString($err) ."\n";
       }
@@ -51,6 +51,7 @@ class clError
   // -------------------------------------- //
   public function getXML()
   {
+    if (count($this->m_error)==0) return '';
     $out = "  <ERRORS>\n";
 
     foreach($this->m_error as $err)
@@ -101,6 +102,7 @@ class clError
 	echo  'Error: '. htmlentities($this->formErrorString($ErrorInfo)) .'<br />';
       }
     }
+    return false;
   }
 
 

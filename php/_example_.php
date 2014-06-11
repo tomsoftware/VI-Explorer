@@ -36,6 +36,8 @@ if ($LV->readVI()) { //- read .VI File
 
   $VERS = $LV->getVERS();
 
+  echo '<pre>'. htmlentities($LV->getXML()) .'</pre>';
+  echo '<hr />';
   echo '<pre>'. htmlentities($BDPW->getXML()) .'</pre>';
   echo '<hr />';
   echo '<pre>'. htmlentities($VCTP->getXML()) .'</pre>';
@@ -49,13 +51,10 @@ if ($LV->readVI()) { //- read .VI File
   //- save the .VI
   if (!$LV->store('out.vi'))
   {
-    echo '<b>Error: </b><pre>'. print_r($LV->getErrorStr(),true) .'</pre>';
+    echo '<b>Error: </b><pre>'. $LV->getErrorStr() .'</pre>';
   }
 
 
-
-
-//  print_r($LV->getError());
 
 }
 

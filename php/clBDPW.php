@@ -76,6 +76,10 @@ class clBDPW {
   // -------------------------------------- //
   Private Function getHash($md5password, $checkSalt = False)
   {
+
+    $BDH__content=new stdClass();
+    $LVSR_content=new stdClass();
+
     $out = new stdClass();
     $out->salt ='';
     $out->hash1 ='';
@@ -86,17 +90,31 @@ class clBDPW {
 
     $lv = $this->m_lv;
 
-    $BDH_name ='BDHc';
-    if ($this->m_lv->BlockNameExists('BDHb')) $BDH_name ='BDHb';
 
-
-    $LVSR_content = $lv->getBlockContent('LVSR', 0, false);
-    $LIBN_content = $lv->getBlockContent('LIBN', 0, false); 
-    $BDH__content = $lv->getBlockContent($BDH_name);
-
-
-    $LIBN_count = $LIBN_content->readInt(4);
-    $LIBN_len = $LIBN_content->readInt(1);
+    //- get block-diagram container
+    if ($this->m_lv->BlockNameExists('BDHc'))
+    {
+      //-> for Version 10,11,12
+      $BDH__content = $lv->getBlockContent('BDHc');
+      $LVSR_content = $lv->getBlockContent('LVSR', 0, false); 
+    }
+    else if ($this->m_lv->BlockNameExists('BDHb'))
+    {
+      //-> for Version 7,8
+      $BDH__content = $lv->getBlockContent('BDHb');
+      $LVSR_content = $lv->getBlockContent('LVSR', 0, false); 
+    }
+    else if ($this->m_lv->BlockNameExists('BDHP'))
+    {
+      //-> for Version 5
+      $BDH__content = $lv->getBlockContent('BDHP',false);
+      $LVSR_content = $lv->getBlockContent('LVIN', 0, false);
+    }
+    else
+    {
+      $this->m_error->AddError('Unable to detect the block-diagram container!');
+      return $out; //- Fail!
+    }
 
 
 
@@ -120,7 +138,7 @@ class clBDPW {
 
     $data .= $LVSR_content->readStr();
 
-    //- I'm not sure how to figure out if there are Terminals (=> generateSaltString) and waht is right... so we have to test :-(
+    //- I'm not sure how to figure out if there are Terminals (=> generateSaltString) and what is the right Terminal to count... so we have to try :-(
     if ($checkSalt)
     {
       $salt = '';
@@ -332,9 +350,14 @@ class clBDPW {
     
     $out .=  "  <hash type='password' value='". bin2hex($this->m_file_psw['password_md5']) ."' /> \n";
     $out .=  "  <hash type='hash1' value='".  bin2hex($this->m_file_psw['hash_1']) ."' /> \n";
-    $out .=  "  <hash type='hash2' value='".  bin2hex($this->m_file_psw['hash_2']) ."' /> \n";
-  
-    If ($this->m_file_psw['salt'] != '')
+
+
+    if ($this->m_file_psw['hash_2'] != '')
+    {
+      $out .=  "  <hash type='hash2' value='".  bin2hex($this->m_file_psw['hash_2']) ."' /> \n";
+    }
+
+    if ($this->m_file_psw['salt'] != '')
     {
       $out .=  "  <salt value='". bin2hex($this->m_file_psw['salt']) ."' /> \n";
     }
