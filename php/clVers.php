@@ -24,30 +24,31 @@ class clVers {
     $this->m_error = new clError('clVers');
 
 
-    if ($lv->BlockNameExists('vers'))
-    {
-      $reader = $lv->getBlockContent('vers', false);
 
-      $this->m_version = self::getVersionFromCode($reader->readInt(4));
+    if (!$lv->BlockNameExists('vers')) return $this->m_error->AddError('Block "vers" not found?');
+
+
+    $reader = $lv->getBlockContent('vers', false);
+
+    $this->m_version = self::getVersionFromCode($reader->readInt(4));
 
     
-      //- don't know flag??
-      $v = $reader->readInt(2);
+    //- don't know flag??
+    $v = $reader->readInt(2);
   
-      if ($v != 0)
-      {
-        $this->m_error->AddError('Version - wrong data format? (value: '. $v .' should be 0)!');
-	return false;
-      }
-  
-      //- read version text
-      $length = $reader->readInt(1);
-      $this->m_vers_text = $reader->readStr($length);
-  
-  
-      $length = $reader->readInt(1);
-      $this->m_vers_info = $reader->readStr($length);
+    if ($v != 0)
+    {
+      $this->m_error->AddError('Version - wrong data format? (value: '. $v .' should be 0)!'); //- maybe the compiled OS-Version?
+      return false;
     }
+  
+    //- read version text
+    $length = $reader->readInt(1);
+    $this->m_vers_text = $reader->readStr($length);
+  
+  
+    $length = $reader->readInt(1);
+    $this->m_vers_info = $reader->readStr($length);
   }
 
 

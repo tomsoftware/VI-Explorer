@@ -168,6 +168,11 @@ class clLabView
     }
 
 
+    //--------
+    //- read Password information to check and calc salt
+    $myBDPW = $this->getBDPW();
+
+
     return true;
   }
   
@@ -187,14 +192,13 @@ class clLabView
    * @return true on success  */
   public function store($newFilename)
   {
+    $myBDPW = $this->getBDPW();
 
-    $myBSPW = $this->getBDPW();
-
-    $hashOK = $myBSPW->calcPasswordHashs(); //- update the hashes
+    $hashOK = $myBDPW->calcPasswordHashs(); //- update the hashes
 
     if ($hashOK)
     {
-      $myBSPW->writePasswordHashs(); //- overwrite Password
+      $myBDPW->writePasswordHashs(); //- overwrite Password
 
 
       return $this->FileReader->store($newFilename); //- write File to disk
@@ -287,6 +291,20 @@ class clLabView
     return $this->lvObj['BDPW'];
   }
 
+  /** --------------------------------------
+   * @abstract returns the VI LVSR container Object that contains the general Versions infromation
+
+   * @return clLVSR object Instanz of class clLVSR  */
+  public function getLVSR()
+  {
+    if (!isset($this->lvObj['LVSR'])) {
+      include_once('clLVSR.php');
+
+      $this->lvObj['LVSR'] = new clLVSR($this);
+    }
+
+    return $this->lvObj['LVSR'];
+  }
 
   /** --------------------------------------
    * @abstract returns the VI Icon container Object that contains the Symbol

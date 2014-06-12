@@ -24,10 +24,13 @@ $LV = new clLabView($FReader);
 
 if ($LV->readVI()) { //- read .VI File
 
+  //- Password
   $BDPW = $LV->getBDPW();
-
-
   $BDPW->setPassword('new Password!'); //- set the new password
+
+  //- Version
+  $LVSR = $LV->getLVSR();
+  //$LVSR->setVersion(8,6); //- does not work because too many errors when opening VI in Labview
 
 
 
@@ -43,6 +46,8 @@ if ($LV->readVI()) { //- read .VI File
   echo '<pre>'. htmlentities($VCTP->getXML()) .'</pre>';
   echo '<hr />';
   echo '<pre>'. htmlentities($VERS->getXML()) .'</pre>';
+  echo '<hr />';
+  echo '<pre>'. htmlentities($LVSR->getXML()) .'</pre>';
   //-- end debugging ----
 
 
