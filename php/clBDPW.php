@@ -33,10 +33,16 @@ class clBDPW {
     $this->m_error = new clError('clBDPW');
     $this->m_isHashReadOK = false;
 
+    //- init struct
+    $this->m_file_psw['salt']='';
+    $this->m_file_psw['password_md5']='';
+    $this->m_file_psw['hash_1']='';
+    $this->m_file_psw['hash_2']='';
 
-    If (!$lv->BlockNameExists('BDPW'))
+
+    if (!$lv->BlockNameExists('BDPW'))
     {
-      $this->m_error->AddError('File has no password information!');
+      $this->m_error->AddError('File has no password information! - Version < 5.0?');
       return;
     }
   
@@ -264,6 +270,10 @@ class clBDPW {
   public function calcPasswordHashs()
   {
     $this->m_password_set = array();
+
+
+    if (!$this->m_FileHasPassword) return true; //- no Password - Version bevore 5.0?!
+
 
     $hash = $this->getHash($this->m_set_md5_psw);
 

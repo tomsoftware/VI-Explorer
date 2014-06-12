@@ -490,7 +490,7 @@ class clLabView
 
     foreach($this->BlockInfo as $b)
     {
-      $out .=  "  <block name='". $b['BlockName'] ."' offset='". $b['BlockOffset'] ."' infoOffset='". $b['BlockInfoOffset'] ." containerCount='". $b['BlockCount'] ."'/> \n";
+      $out .=  "  <block name='". $b['BlockName'] ."' offset='". $b['BlockOffset'] ."' infoOffset='". $b['BlockInfoOffset'] ." containerCount='". $b['BlockCount'] ."' /> \n";
     }
 
 
