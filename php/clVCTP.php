@@ -42,6 +42,7 @@ class clVCTP {
     const AttributTypeNumberFlag = 0x1;       //- Unknown: 0x00
     const AttributTypeStringFlag = 0x31;      //- Unknown: FF FF FF FF
     const AttributTypeArrayDimensions = 0x41; //- Count of Dimensions of a Array
+    const AttributTypeArrayFixedSize=0x42;
     const AttributTypeClusterFormat = 0x51;
     const AttributTypeClusterFormatStr = 0x52;
     const AttributTypeRefType = 0x71;
@@ -386,13 +387,21 @@ class clVCTP {
       $tmp = $Reader->readInt(4);
       if (($tmp != 0xFFFFFFFF) && ($tmp != -1)) //- depending on platform 32/64 Bit
       {
-        $this->m_error->AddError('Array with property (index: '. $i .' - flag: '. $tmp .' ? ) @ '. $ob['pos']);
-        $ok=false;
+	if (($tmp & 0x80000000) != 0)
+	{
+	  //- Array with fixed size
+	  $this->AddPropertyNum($ObjectIndex, self::AttributTypeArrayFixedSize, $tmp & 0x00FFFFFF, false);
+	}
+	else
+	{
+          $this->m_error->AddError('Array with property (index: '. $i .' - flag: '. $tmp .' ? ) @ '. $ob['pos']);
+          $ok=false;
+	}
       }
     }
 
       
-    if ($ok)
+    if ($ok) //- hopefully we are not out of sync
     {
       $tmp = $Reader->readInt(2);
         
@@ -1295,7 +1304,9 @@ class clVCTP {
     $this->AttributNameTable[self::AttributTypeStringFlag]=		'StringFlag';
     
     $this->AttributNameTable[self::AttributTypeArrayDimensions]=	'ArrayDimensions';
+    $this->AttributNameTable[self::AttributTypeArrayFixedSize]=		'ArrayFixedSize';
     
+
     $this->AttributNameTable[self::AttributTypeNumberFlag]=		'NumberFlag';
     
     $this->AttributNameTable[self::AttributTypeClusterFormat]=		'ClusterFormat';
