@@ -96,29 +96,45 @@ class clBDPW {
 
     $lv = $this->m_lv;
 
-
+    //----
     //- get block-diagram container
     if ($this->m_lv->BlockNameExists('BDHc'))
     {
       //-> for Version 10,11,12
       $BDH__content = $lv->getBlockContent('BDHc');
-      $LVSR_content = $lv->getBlockContent('LVSR', 0, false); 
     }
     else if ($this->m_lv->BlockNameExists('BDHb'))
     {
       //-> for Version 7,8
       $BDH__content = $lv->getBlockContent('BDHb');
-      $LVSR_content = $lv->getBlockContent('LVSR', 0, false); 
     }
     else if ($this->m_lv->BlockNameExists('BDHP'))
     {
-      //-> for Version 5
+      //-> for Version 5,6
       $BDH__content = $lv->getBlockContent('BDHP',false);
-      $LVSR_content = $lv->getBlockContent('LVIN', 0, false);
     }
     else
     {
       $this->m_error->AddError('Unable to detect the block-diagram container!');
+      return $out; //- Fail!
+    }
+
+
+    //----
+    //- get VI-versions container
+    if ($this->m_lv->BlockNameExists('LVSR'))
+    {
+      //- 6,7,8,...
+      $LVSR_content = $lv->getBlockContent('LVSR', 0, false);
+    }
+    else if ($this->m_lv->BlockNameExists('LVIN'))
+    {
+      //- 5
+      $LVSR_content = $lv->getBlockContent('LVIN', 0, false);
+    }
+    else
+    {
+      $this->m_error->AddError('Unable to detect the LVSR or LVIN container!');
       return $out; //- Fail!
     }
 
