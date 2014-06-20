@@ -1036,10 +1036,13 @@ class clVCTP {
     if (($ObjectIndex >= 0) && ($ObjectIndex < count($this->m_objects)))
     {
       $mainType = $this->m_objects[$ObjectIndex]['mainType'];
-      return (($mainType == self::MainTypeNumber) || ($mainType == self::MainTypeUnit));
+      $type = $this->m_objects[$ObjectIndex]['type'];
+
+      return (($mainType == self::MainTypeNumber) || ($mainType == self::MainTypeUnit) || ($type == self::TypeClusterNumFixPoint));
     }
     return false;
   }
+
 
 
   // -------------------------------------- //
