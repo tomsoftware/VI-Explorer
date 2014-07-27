@@ -83,7 +83,7 @@ class clBDPW {
   Private Function getHash($md5password, $checkSalt = False)
   {
 
-    $BDH__content=new stdClass();
+    $BDH__content=null;
     $LVSR_content=new stdClass();
 
     $out = new stdClass();
@@ -116,7 +116,7 @@ class clBDPW {
     else
     {
       $this->m_error->AddError('Unable to detect the block-diagram container!');
-      return $out; //- Fail!
+      //- some files with Version 9 doesn't have a block-diagram!?
     }
 
 
@@ -215,9 +215,16 @@ class clBDPW {
     $out->hash1 = md5($md5password . $data . $out->salt, true);
 
 
-
-    $BDH__len = $BDH__content->readInt(4);
-    $BDH__hash = md5($BDH__content->readStr($BDH__len), true);
+    if ($BDH__content===null)
+    {
+      $BDH__len = 0;
+      $BDH__hash = md5('', true);
+    }
+    else
+    {
+      $BDH__len = $BDH__content->readInt(4);
+      $BDH__hash = md5($BDH__content->readStr($BDH__len), true);
+    }
 
     //-- Hash2:  Hash1 + BDHc
     $out->hash2 = md5($out->hash1 . $BDH__hash, true);
