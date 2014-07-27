@@ -115,8 +115,9 @@ class clBDPW {
     }
     else
     {
+      //- If the user has removed the block diargam there is no need for / way to detect the password
       $this->m_error->AddError('Unable to detect the block-diagram container!');
-      //- some files with Version 9 doesn't have a block-diagram!?
+      return $out; //- Fail!
     }
 
 
