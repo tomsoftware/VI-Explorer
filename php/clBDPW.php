@@ -110,13 +110,13 @@ class clBDPW {
     }
     else if ($this->m_lv->BlockNameExists('BDHP'))
     {
-      //-> for Version 5,6
+      //-> for Version 5,6,7beta
       $BDH__content = $lv->getBlockContent('BDHP',false);
     }
     else
     {
       //- If the user has removed the block diargam there is no need for / way to detect the password
-      $this->m_error->AddError('Unable to detect the block-diagram container!');
+      $this->m_error->AddError('Unable to detect the block-diagram container! Block diagram removed?');
       return $out; //- Fail!
     }
 
@@ -146,8 +146,8 @@ class clBDPW {
       $LIBN_content = $lv->getBlockContent('LIBN', 0, False);
     
       $LIBN_count = $LIBN_content->readInt(4);
+
       $LIBN_len = $LIBN_content->readInt(1);
-    
       $data .= $LIBN_content->readStr($LIBN_len);
     
       For ($i = 1; $i<$LIBN_count; $i++)
@@ -156,7 +156,6 @@ class clBDPW {
 	$data .= ':'. $LIBN_content->readStr($LIBN_len2);
       }
     }
-
 
 
     $data .= $LVSR_content->readStr();
@@ -201,7 +200,11 @@ class clBDPW {
       else
       {
 	//- empty $salt
-        if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1']) return $out; //- Fail!
+        if (md5($md5password . $data . $salt, true) != $this->m_file_psw['hash_1'])
+	{
+	  $this->m_error->AddError('Hash 1 may be wrong! Did you change the hash yourself?');
+	  //return $out; //- Fail!
+	}
       }
 
       $out->salt = $salt;
