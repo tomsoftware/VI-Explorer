@@ -45,8 +45,34 @@ class clLVSR {
     //- delete known flag-bits
     $out['flags'] = $out['flags'] & 0xDFFF;
 
+
+    //- Library Password
+    $out['libpassword'] = $reader->readStr(16, 96);
+
+
     $this->m_LVSR = $out;
   }
+
+
+  // -------------------------------------- //
+  public function getLibraryPasswordHash($seperator='')
+  {
+    return $this->m_lv->toHex($this->m_LVSR['libpassword'], $seperator);
+  }
+
+
+  //--------------------------------------//
+  public function setLibraryPassword($newPassword)
+  {
+    //- change Library Password hash if set
+    if (strlen($this->m_LVSR['libpassword'])==16)
+    {
+      $LVSR_content = $this->m_lv->getBlockContent('LVSR', false);
+      $LVSR_content->writeStr(md5($newPassword, true), 96);
+    }
+
+  }
+
 
 
   //--------------------------------------//
@@ -80,6 +106,10 @@ class clLVSR {
     $out .= "    <build value='" . $version['build'] ."' />\n";
     $out .= "    <flags value='" . $version['flags'] ."' />\n";
     $out .= "  </version>\n";
+
+    $out .= "  <library>\n";
+    $out .= "    <password value='" . bin2hex($this->m_LVSR['libpassword']) ."' />\n";
+    $out .= "  </library>\n";
 
     $out .= "  <protected value='" . (($this->m_LVSR['protected']>0)?'yes':'no') ."' />\n";
     $out .= "  <flags value='" . $this->m_LVSR['flags'] ."' />\n";

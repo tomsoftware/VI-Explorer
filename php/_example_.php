@@ -11,26 +11,36 @@ function getgetVar($varname, $default='')
 include_once('clFile.php');
 include_once('cllabview.php');
 
-$filename = 'myFile.vi';
+$filename_in = 'myFile.vi';
+$filename_out = 'out.vi';
+$newPassword = '123456';
 
 
 $file = new clFile();
-$file->readFromFile($filename); //- open File
+$file->readFromFile($filename_in); //- open File
 
 $FReader = $file->getFileReader();
 
+
+//- create a Labview class to controle the process
 $LV = new clLabView($FReader);
 
 
-if ($LV->readVI()) { //- read .VI File
+//- read .VI File
+if ($LV->readVI())
+{
 
   //- Password
   $BDPW = $LV->getBDPW();
-  $BDPW->setPassword('new Password!'); //- set the new password
+  $BDPW->setPassword($newPassword); //- set the new password
 
-  //- Version
+
+  //- Version + Library Password
   $LVSR = $LV->getLVSR();
-  //$LVSR->setVersion(8,6); //- does not work because too many errors when opening VI in Labview
+  $LVSR->setLibraryPassword($newPassword); //- set the new Library Password
+
+  //- does not work because too many errors when opening VI in Labview... but you can giv it a try
+  //$LVSR->setVersion(8,6);
 
 
 
@@ -53,8 +63,8 @@ if ($LV->readVI()) { //- read .VI File
 
 
 
-  //- save the .VI
-  if (!$LV->store('out.vi'))
+  //- save the .VI (this will calculate the password hash)
+  if (!$LV->store($filename_out))
   {
     echo '<b>Error: </b><pre>'. $LV->getErrorStr() .'</pre>';
   }

@@ -301,7 +301,7 @@ class clBDPW {
 
     if (!$this->m_FileHasPassword) return true; //- no Password - Version bevore 5.0?!
 
-
+    //- find the hashes matching the File
     $hash = $this->getHash($this->m_set_md5_psw);
 
     if (($hash->isOK) && ($this->m_isHashReadOK))
