@@ -96,24 +96,25 @@ class clLVSR {
     //$out .= "<!-- Filename='" . htmlentities($this->m_lv->getFileName()) . "' -->\n\n";
     $out = "<LVSR> \n";
     
-    $version = $this->m_LVSR['version'];
-    
+    if (isset($this->m_LVSR['version']))
+    {
+      $version = $this->m_LVSR['version'];
 
-    $out .= "  <version value='" . $version['maior'] .".". $version['minor'] ."' >\n";
-    $out .= "    <bugfix value='" . $version['bugfix'] ."' />\n";
-    $out .= "    <stage value='" . $version['stage'] ."' />\n";
-    $out .= "    <stageText value='" . $version['stage_text'] ."' />\n";
-    $out .= "    <build value='" . $version['build'] ."' />\n";
-    $out .= "    <flags value='" . $version['flags'] ."' />\n";
-    $out .= "  </version>\n";
+      $out .= "  <version value='" . $version['maior'] .".". $version['minor'] ."' >\n";
+      $out .= "    <bugfix value='" . $version['bugfix'] ."' />\n";
+      $out .= "    <stage value='" . $version['stage'] ."' />\n";
+      $out .= "    <stageText value='" . $version['stage_text'] ."' />\n";
+      $out .= "    <build value='" . $version['build'] ."' />\n";
+      $out .= "    <flags value='" . $version['flags'] ."' />\n";
+      $out .= "  </version>\n";
 
-    $out .= "  <library>\n";
-    $out .= "    <password value='" . bin2hex($this->m_LVSR['libpassword']) ."' />\n";
-    $out .= "  </library>\n";
+      $out .= "  <library>\n";
+      $out .= "    <password value='" . bin2hex($this->m_LVSR['libpassword']) ."' />\n";
+      $out .= "  </library>\n";
 
-    $out .= "  <protected value='" . (($this->m_LVSR['protected']>0)?'yes':'no') ."' />\n";
-    $out .= "  <flags value='" . $this->m_LVSR['flags'] ."' />\n";
-
+      $out .= "  <protected value='" . (($this->m_LVSR['protected']>0)?'yes':'no') ."' />\n";
+      $out .= "  <flags value='" . $this->m_LVSR['flags'] ."' />\n";
+    }
 
     $out .= $this->m_error->getXML();
 
