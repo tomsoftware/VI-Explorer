@@ -117,7 +117,8 @@ class clBDPW {
     {
       //- If the user has removed the block diargam there is no need for / way to detect the password
       $this->m_error->AddError('Unable to detect the block-diagram container! Block diagram removed?');
-      return $out; //- Fail!
+      //  return $out; //- Fail!
+      $BDH__content=NULL;
     }
 
 

@@ -430,7 +430,7 @@ class clLabView
 
     $usize=$data->readInt(4);
     
-    if ((($usize+30) < $size) || ($usize > ($size * 10))) {
+    if ((($usize+30) < $size) || ($usize > ($size * 30))) {
       $this->m_error->addError('unable to decompress section [#'. $info_blockID .']: uncompress-size-error - size: '. $size .' - uncompress-size:'. $usize);
       return $file->getFileReader(); //- empty File
     }

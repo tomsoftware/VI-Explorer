@@ -353,7 +353,7 @@ class clVCTP {
 	}
 	else
 	{
-          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['size'] .') [index='. $ObjectIndex .'] Error @ '. $ob['pos']);
+          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['size'] .') [index='. $ObjectIndex .'] Error @ '. $ob['pos'] , true);
         }
         
       }
@@ -862,7 +862,7 @@ class clVCTP {
       
       if ($tmp != 0)
       {
-        $this->m_error->AddError('Number+Uni - padding Error - unknown Data ['. decHex($tmp) .'] ? index='. $ObjectIndex .' @ '. $ob['pos']);
+        $this->m_error->AddError('Number+Uni - padding Error - unknown Data ['. decHex($tmp) .'] ? index='. $ObjectIndex .' @ '. $ob['pos'], true);
       }
     }
     
@@ -871,7 +871,7 @@ class clVCTP {
     $tmp = $Reader->readInt(1);
     If ($tmp != 0)
     {
-      $this->m_error->AddError('Number+Uni - Unknown Data ['. decHex($tmp) .'] Property? index='. $ObjectIndex .' @ '. $ob['pos']);
+      $this->m_error->AddError('Number+Uni - Unknown Data ['. decHex($tmp) .'] Property? index='. $ObjectIndex .' @ '. $ob['pos'], true);
     }
 
 

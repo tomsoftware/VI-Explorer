@@ -39,7 +39,7 @@ class clVers {
     if ($v != 0)
     {
       $this->m_error->AddError('Version - wrong data format? (value: '. $v .' should be 0)!'); //- maybe the compiled OS-Version?
-      return false;
+      //return false;
     }
   
     //- read version text
