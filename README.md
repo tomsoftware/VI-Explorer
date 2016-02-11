@@ -1,8 +1,8 @@
 VI-Explorer
 ===========
-(not stable!! but working :-) )
+(not stable but working :-) )
 
-This version should be/is compatible with Labview VI-Fileformat from 5.0 up to Labview 2013
+This version should be/is compatible with Labview VI-Fileformat from 5.0 up to Labview 2015
 
 see example code: "_example_.php"
 
