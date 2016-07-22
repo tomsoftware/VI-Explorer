@@ -26,7 +26,8 @@ class clVCTP {
     const MainTypeBlob = 0x3;     //- String/Path/...
     const MainTypeArray = 0x4;    //- Array
     const MainTypeCluster = 0x5;  //- Struct (hard code [Timestamp] or flexibl)
-    const MainTypeRef = 0x7;      //- Pointer
+    const MainTypeUnknownType = 0x6;  //- ???
+    const MainTypeRef = 0x7;      //- Pointers
     const MainTypeNumberPointer = 0x8;      //- INT+Format: Enum/Units Pointer
     const MainTypeTerminal = 0xF; //- like Cluser+Flags/Typdef
     //--- not official
@@ -113,6 +114,7 @@ class clVCTP {
 
     const TypeRef = 0x70;
 
+    const TypePointerNumberXX = 0x80;
     const TypePointerNumberI8 = 0x81;
     const TypePointerNumberI16 = 0x82;
     const TypePointerNumberI32 = 0x83;
@@ -161,8 +163,8 @@ class clVCTP {
 
     $this->initNameTabels(); //-- fill $this->TypeNameTable
 
-    $this->m_objects=array();
-    $this->m_InterfaceCache=array();
+    $this->m_objects = array();
+    $this->m_InterfaceCache = array();
 
 
     $this->m_VersionMaior = $lv->getVERS()->getMaior();
@@ -178,16 +180,14 @@ class clVCTP {
       
 
       //- create Objects
-      for($i=0; $i<$count; $i++)
+      for($i = 0; $i < $count; $i++)
       {
 	$this->getNewObject(0, 0);
       }
 
       //- fill objects
-      for($i=0; $i<$count; $i++)
+      for($i = 0; $i < $count; $i++)
       {
-        
-
         $reader->setOffset($pos);
         $len = $reader->readInt(2);
         
@@ -198,7 +198,7 @@ class clVCTP {
 
 	$ob['pos'] = $pos;
 	$ob['size'] = $len;
-        $ob['flags']=$reader->readInt(1);
+        $ob['flags'] = $reader->readInt(1);
 
 
 	//-- basic type validation
@@ -217,30 +217,32 @@ class clVCTP {
   // -------------------------------------- //
   private Function setNewObjectType(&$ob, $type)
   {
-    $ob['fileType']=$type;
-    if (isset($this->TypeNameTable[$type]))
-    {
-      $ob['type']=$type;
-      $ob['mainType']=($type >> 4);
-      if ($type==0) $ob['mainType'] = self::MainTypeVoid;
-      $ob['name']=$this->TypeNameTable[$type];
-    }
+    $ob['fileType'] = $type;
+
+    $ob['type'] = $type;
+    $ob['mainType'] = ($type >> 4);
+    if ($type == 0) $ob['mainType'] = self::MainTypeVoid;
+
+    //- define unknown name
+    if (!isset($this->TypeNameTable[$type])) $this->TypeNameTable[$type] = 'TYPE0x'. dechex($type);
+
+    $ob['name'] = $this->TypeNameTable[$type];
   }
 
   // -------------------------------------- //
   private Function getNewObject($filePos, $length)
   {
     $item = array();
-    $item ['atrib']=array();
-    $item ['clients']=array();
-    $item ['pos']=$filePos;
-    $item ['size']=$length;
-    $item ['flags']=0;
-    $item ['label']='';
-    $item ['fileType']=0;
-    $item ['name']='';
-    $item ['type']=self::TypeUnknown;
-    $item ['mainType']=self::MainTypeUnknown;
+    $item ['atrib'] = array();
+    $item ['clients'] = array();
+    $item ['pos'] = $filePos;
+    $item ['size'] = $length;
+    $item ['flags'] = 0;
+    $item ['label'] = '';
+    $item ['fileType'] = 0;
+    $item ['name'] = '';
+    $item ['type'] = self::TypeUnknown;
+    $item ['mainType'] = self::MainTypeUnknown;
 
     $Newindex = count($this->m_objects);
 
@@ -255,10 +257,10 @@ class clVCTP {
   private function readObjectInfo($reader, $ObjectIndex)
   {
 
-    $deltaLen=0;
-    $tinfo=array(); //- tyObjectInfo
-    $otyp=0;
-    $length=0;
+    $deltaLen = 0;
+    $tinfo = array(); //- tyObjectInfo
+    $otyp = 0;
+    $length = 0;
 
 
     $ob=& $this->m_objects[$ObjectIndex];
@@ -277,7 +279,7 @@ class clVCTP {
 	break;
 
       case self::MainTypeNumberPointer:
-	$propReadOK = $this->readObjectPropertyNumber($reader, $ObjectIndex);  //- not sure!
+	$propReadOK = $this->readObjectPropertyNumberPtr($reader, $ObjectIndex);  //- not sure!
 	break;
 
       case self::MainTypeBlob:   //- 40 32   FF FF FF FF
@@ -326,12 +328,19 @@ class clVCTP {
 	$propReadOK = True;
 	break;
 
+      case self::MainTypeUnknownType:
+	//- I don't have any clue what this can be.
+	//- there are many different 0x6 types: 0x64,0x63, 0x60, ...
+	//- they don't have labels and differ in size
+	//$this->m_error->AddError('unknown 0x6 Type: 0x'. dechex($ob['fileType']));
+	break;
+
       case self::MainTypeCluster:
 	$propReadOK = $this->readObjectPropertyCluster($reader, $ObjectIndex);
 	break;
 
       default:  //- +MainTypeUnknown
-	$this->m_error->AddError('unknown object type [index='. $ObjectIndex .']: 0x'. dechex($ob['fileType']) .'  @ '.$ob['pos'], true, '', false);
+	$this->m_error->AddError('unknown object type 0x'. dechex($ob['fileType']) .' [index='. $ObjectIndex .']  @ '. $ob['pos'], true, '', true);
 	$propReadOK = false;
     }
 
@@ -340,10 +349,8 @@ class clVCTP {
     //- read Label of object
     if ($propReadOK)
     {
-  
       if ($ob['flags'] & self::ObjectFlagHasLabel)
       {
-      
 	$length = $reader->readInt(1);
 	$deltaLen = $ob['size'] - ($reader->getOffset() - $ob['pos']);  //- not sure about this!
 
@@ -353,7 +360,7 @@ class clVCTP {
 	}
 	else
 	{
-          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['size'] .') [index='. $ObjectIndex .'] Error @ '. $ob['pos'] , true);
+          $this->m_error->AddError('Caption/Label size (diff: '. ($deltaLen - $length) .' - len: '. $length .'  -  '. $ob['size'] .') of type:0x'. dechex($ob['fileType']) .' [index='. $ObjectIndex .'] Error @ '. $ob['pos'] , true);
         }
         
       }
@@ -428,13 +435,17 @@ class clVCTP {
   // -------------------------------------- //
   private function readObjectPropertyNumber($Reader, $ObjectIndex)
   {
-
     $tmp = $Reader->readInt(1);
-  
     if ($tmp == 0) return true;
 
     $this->m_error->AddError('Number [index='. $ObjectIndex .'] with property (0x'. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
     return false;
+  }
+
+  // -------------------------------------- //
+  private function readObjectPropertyNumberPtr($Reader, $ObjectIndex)
+  {
+    return true;
   }
 
 
@@ -462,14 +473,14 @@ class clVCTP {
       case self::TypeCluster:
 	$count = $Reader->readInt(2);
           
-	If ($count > 124)
+	If ($count > 500)
 	{
           $this->m_error->AddError('Cluster Item count ('. $count .') is > 124 @ '. $ob['pos']);
           return false;
 	}
 	else
 	{
-          for($i=0; $i<$count; $i++)
+          for($i = 0; $i < $count; $i++)
 	  {
 	    $item = array();
 	    $item['index'] = $Reader->readInt(2);
@@ -729,38 +740,31 @@ class clVCTP {
 
     $ob=& $this->m_objects[$ObjectIndex];
 
-     //- dont know this data!
+    //- dont know this data!
     $tmp1 = $Reader->readInt(2);
-    $tmp2 = $Reader->readInt(2);
-    $tmp3 = $Reader->readInt(2);
-    $tmp4 = $Reader->readInt(2);
-    $tmp5 = $Reader->readInt(2);
+    $count = $Reader->readInt(2);
 
-    
-    //if (($tmp1 == 0) && ($tmp2 == 1) && ($tmp3 == 1) && ($tmp4 == 0))
-    //{
-      $this->AddPropertyNum($ObjectIndex, self::AttributTypeRefEventRegistFlags, $tmp5);
-    
-      $count = 1; //- dont know if $tmp2 or $tmp3??
-
-
-      for ($i = 0; $i<$count; $i++)
+    if (($tmp1 == 0) && ($count > 0))
+    {
+      for ($i = 0; $i < $count; $i++)
       {
+	//- dont know this data!
+	$tmp3 = $Reader->readInt(2);
+	$tmp4 = $Reader->readInt(2);
+	$tmp5 = $Reader->readInt(2);
+
         //- add Item to parent
         $ob['clients'][$i]['index'] = $Reader->readInt(2);
         $ob['clients'][$i]['flags'] = 0;
       }
 
-
       return true;
-    //}
-    //else
-    //{
-    //
-    //  $this->m_error->AddError('[readObjectPropertyRefEventRegist]  - Unknown value {0x'. dechex($tmp1) .', 0x'. dechex($tmp2) .', 0x'. dechex($tmp3) .', 0x'. dechex($tmp4) .', 0x'. dechex($tmp5) .'} ? @ '. $ob['pos']);
-    //
-    //  return false;
-    //}
+    }
+    else
+    {
+      $this->m_error->AddError('[readObjectPropertyRefEventRegist]  - Unknown value {0x'. dechex($tmp1) .', count='. $count .' ? @ '. $ob['pos']);
+      return false;
+    }
     
 
     
@@ -791,7 +795,7 @@ class clVCTP {
     else
     {
       
-      $this->m_error->AddError('[readObjectPropertyRefQueue]  - Unknown value/count ['. decHex($tmp) .'] ? @ '. $ob['pos']);
+      $this->m_error->AddError('[readObjectPropertyRefQueue]  - Unknown value/count [0x'. decHex($tmp) .'] ? @ '. $ob['pos']);
       return false;
     }
 
@@ -813,12 +817,12 @@ class clVCTP {
     if (($ob['type'] == self::TypeUnitU16) || ($ob['type'] == self::TypeUnitU8) || ($ob['type'] == self::TypeUnitU32)) $isTextEnum = True;
   
 
-    for ($i=0; $i<$count; $i++)
+    for ($i = 0; $i < $count; $i++)
     {
       $tmpClient = array();
 
-      $tmpClient['atrib']=array();
-      $tmpClient['clients']=array();
+      $tmpClient['atrib'] = array();
+      $tmpClient['clients'] = array();
       $tmpClient['mainType'] = self::MainTypeValue;
       $tmpClient['type'] = self::TypeValue;
       $tmpClient['fileType'] = self::TypeValue;
@@ -826,19 +830,18 @@ class clVCTP {
       $tmpClient['flags'] = 0;
       $tmpClient['name'] = 'UnitValue';
 
-      $unitsize=0;
+      $unitsize = 0;
  
       if ($isTextEnum)
       {
 	$unitsize = $Reader->readInt(1);
-
 	$tmpClient['label'] = $Reader->readStr($unitsize);
-                             
-        $DataSize += $unitsize;
+        $DataSize += $unitsize + 1;
       }
       else 
       {
 	$tmpClient['label'] = '0x'. decHex($Reader->readInt(4));
+        $DataSize += 4;
       }        
       
 
@@ -850,28 +853,22 @@ class clVCTP {
 
     }
 
-    
-    
-    If ($isTextEnum)
+    //- padding
+    if (($DataSize % 2) != 0)
     {
-      //- pad size to mod 2 - not sure about this!
-      $tmp = $Reader->readInt($DataSize % 2);
-					      
-      //$tmp = $Reader->readInt(($Reader->getOffset() + 1) % 2);
-      
-      
+      $tmp = $Reader->readInt(1);
+
       if ($tmp != 0)
       {
-        $this->m_error->AddError('Number+Uni - padding Error - unknown Data ['. decHex($tmp) .'] ? index='. $ObjectIndex .' @ '. $ob['pos'], true);
+        $this->m_error->AddError('Number+Uni - padding Error - unknown Data [0x'. decHex($tmp) .'] ? index='. $ObjectIndex .' @ '. $ob['pos'], true);
       }
     }
-    
     
     //- dont know property -> see readObjectPropertyNumber
     $tmp = $Reader->readInt(1);
     If ($tmp != 0)
     {
-      $this->m_error->AddError('Number+Uni - Unknown Data ['. decHex($tmp) .'] Property? index='. $ObjectIndex .' @ '. $ob['pos'], true);
+      $this->m_error->AddError('Number+Uni - Unknown Data [0x'. decHex($tmp) .'] Property? index='. $ObjectIndex .' @ '. $ob['pos'], true);
     }
 
 
@@ -902,7 +899,7 @@ class clVCTP {
     //- Create New Object
     $length = $Reader->readInt(2) - 6; //- dont know why?!
 
-    $unitIndex = $this->getNewObject($Reader->getOffset()+2, $length-2);
+    $unitIndex = $this->getNewObject($Reader->getOffset() + 2, $length - 2);
 
     $Newob=& $this->m_objects[$unitIndex];
 
@@ -977,7 +974,7 @@ class clVCTP {
   
     if (($tmp == 0xFFFFFFFF) || ($tmp == -1)) return true; //- same as 0xffffffff
 
-    $this->m_error->AddError('Blob with prop ('. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
+    $this->m_error->AddError('Blob with prop (0x'. dechex($tmp) .')??? @ '. $this->m_objects[$ObjectIndex]['pos']);
     return false;
   }
 
@@ -1156,7 +1153,6 @@ class clVCTP {
       
       
       if ($ClientFlags > 0) $out .= "TerminalFlag='0x". decHex($ClientFlags) ."' ";
-      
     }
   
   
@@ -1257,7 +1253,8 @@ class clVCTP {
     $this->TypeNameTable[self::TypeUnitCDB]=	'Complex Double+Unit';
     $this->TypeNameTable[self::TypeUnitCXT]=	'Complex Extended+Unit';
   
-  
+    $this->TypeNameTable[self::TypePointerNumberXX]='Pointer Number XX';
+
     $this->TypeNameTable[self::TypePointerNumberI8]=	'I8 Pointer';
     $this->TypeNameTable[self::TypePointerNumberI16]=	'I16 Pointer';
     $this->TypeNameTable[self::TypePointerNumberI32]=	'I32 Pointer';
@@ -1329,7 +1326,6 @@ class clVCTP {
 
     $this->AttributNameTable[self::AttributTypeRefDataValFlags]=	'RefDataValeuFlags';
   
-
 
     $this->AttributNameTable[self::AttributTypeUnknown]=		'_unknown_';
     
