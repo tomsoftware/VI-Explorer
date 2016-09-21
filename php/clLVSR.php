@@ -57,6 +57,8 @@ class clLVSR {
   // -------------------------------------- //
   public function getLibraryPasswordHash($seperator='')
   {
+    if (!isset($this->m_LVSR['libpassword'])) return '';
+
     return $this->m_lv->toHex($this->m_LVSR['libpassword'], $seperator);
   }
 
@@ -64,6 +66,8 @@ class clLVSR {
   //--------------------------------------//
   public function setLibraryPassword($newPassword)
   {
+    if (!isset($this->m_LVSR['libpassword'])) return;
+
     //- change Library Password hash if set
     if (strlen($this->m_LVSR['libpassword'])==16)
     {
